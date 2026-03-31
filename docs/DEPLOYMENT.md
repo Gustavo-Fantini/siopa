@@ -8,10 +8,13 @@ Executar o sistema em um servidor único, deixando o celular apenas como cliente
 - Acesso mobile pelo navegador via mesma rede ou URL pública.
 - PWA para instalação opcional na tela inicial.
 - Banco via `DATABASE_URL` para SQLite ou PostgreSQL.
+- Supervisão operacional com `GET /health/readiness` e `GET /api/v1/system/runtime`.
 
 ## Variáveis principais
+- `ENVIRONMENT=production`
 - `HOST=0.0.0.0`
 - `PORT=8000`
+- `WORKERS=2`
 - `DEBUG=False`
 - `DATABASE_URL=postgresql+psycopg2://usuario:senha@host:5432/siopa`
 - `PUBLIC_BASE_URL=https://seu-dominio`
@@ -21,7 +24,7 @@ Executar o sistema em um servidor único, deixando o celular apenas como cliente
 
 ## Execução local
 ```bash
-python start.py --host 0.0.0.0 --port 8000
+python start.py --host 0.0.0.0 --port 8000 --workers 2
 ```
 
 ## Execução com Docker
@@ -29,6 +32,24 @@ python start.py --host 0.0.0.0 --port 8000
 docker build -t siopa .
 docker run --rm -p 8000:8000 --env-file .env siopa
 ```
+
+## Execução com Docker Compose
+```bash
+docker compose up --build -d
+```
+
+Com PostgreSQL no mesmo stack:
+```bash
+docker compose --profile postgres up --build -d
+```
+
+## Checklist mínimo de publicação
+1. Copie `.env.example` para `.env`.
+2. Troque `SECRET_KEY`.
+3. Ajuste `PUBLIC_BASE_URL`, `CORS_ORIGINS` e `ALLOWED_HOSTS`.
+4. Confirme `GET /health/readiness`.
+5. Valide `GET /api/v1/system/runtime`.
+6. Ative HTTPS no proxy reverso.
 
 ## Uso no celular
 - Conecte o celular na mesma rede do servidor.
@@ -41,3 +62,4 @@ docker run --rm -p 8000:8000 --env-file .env siopa
 - Ative HTTPS.
 - Restrinja `CORS_ORIGINS` e `ALLOWED_HOSTS`.
 - Revogue segredos antigos antes de publicar o repositório.
+- Não suba `.env`, `app.db`, dataset bruto nem logs.

@@ -5,36 +5,27 @@ Sistema Inteligente de Otimização da Pulverização Agrícola.
 ## Contexto acadêmico
 - Projeto de TCC da ETEC Rodrigues de Abreu.
 - Autores: Cauã Fernandes Jorge, Guilherme Cardoso Galelli, Gustavo Teodoro Fantini e Jeferson Aguilar Junior.
-- Objetivo atual: deixar a plataforma pronta para execução em servidor, acesso mobile e expansão para iniciação científica.
+- Objetivo atual: executar integralmente no servidor, com acesso mobile via navegador e base técnica pronta para iniciação científica.
 
-## O que o projeto faz
+## Capacidades do projeto
 - Analisa papel hidrossensível com visão computacional.
-- Calcula métricas como cobertura, densidade, CV e DV50.
+- Calcula cobertura, densidade, CV, DV50 e métricas correlatas.
 - Integra clima e contexto agronômico.
-- Gera recomendação operacional e de produto.
+- Gera recomendações operacionais e de produto.
 - Mantém fluxo de dataset, anotação e treinamento.
 
-## Arquitetura atual
-- `main.py`: aplicação FastAPI.
-- `app/api/`: rotas HTTP.
-- `app/models/`: análise de imagem e modelos SQLAlchemy.
-- `app/services/`: clima, agricultura, recomendação e treinamento.
-- `app/static/`: interface web principal, anotação, PWA e assets.
-- `docs/`: documentação de API e deploy.
-
-## Melhorias aplicadas nesta revisão
-- Execução preparada para servidor com `HOST=0.0.0.0`, proxy headers e `ROOT_PATH`.
-- Banco desacoplado de SQLite fixo via `DATABASE_URL`.
-- Interface web refeita para uso mobile-first.
-- Interface de anotação refeita com suporte a pointer/touch.
-- PWA adicionada com `manifest.webmanifest` e `service-worker.js`.
-- Dockerfile e documentação de deploy adicionados.
-- `.gitignore` e `.dockerignore` criados.
-- Endpoints de clima, solo, preview e aliases padronizados.
+## Stack atual
+- `FastAPI` no backend HTTP.
+- `SQLAlchemy` para persistência.
+- `OpenCV` e `Pillow` para análise de imagem.
+- `PWA` mobile-first em `app/static/`.
+- `Docker` e `docker-compose` para deploy reproduzível.
+- `GitHub Actions` para validação automática básica.
 
 ## Execução local
 ```bash
 pip install -r requirements.txt
+copy .env.example .env
 python start.py --host 0.0.0.0 --port 8000
 ```
 
@@ -42,30 +33,30 @@ Depois acesse:
 - `http://localhost:8000`
 - `http://SEU_IP_LOCAL:8000` pelo celular na mesma rede
 
-## Variáveis importantes
-Crie um `.env` a partir de `.env.example`.
-
-Campos principais:
-- `HOST`
-- `PORT`
-- `DEBUG`
-- `DATABASE_URL`
-- `PUBLIC_BASE_URL`
-- `CORS_ORIGINS`
-- `ALLOWED_HOSTS`
-- `ROOT_PATH`
-
-## Deploy com Docker
+## Execução com Docker Compose
 ```bash
-docker build -t siopa .
-docker run --rm -p 8000:8000 --env-file .env siopa
+docker compose up --build -d
 ```
 
-## Observações de segurança
-- Não publique `.env` real.
-- Revogue chaves antigas antes de abrir o repositório.
-- Remova artefatos já versionados com `git rm --cached` antes de publicar.
+Para usar PostgreSQL no mesmo ambiente:
+```bash
+docker compose --profile postgres up --build -d
+```
 
-## Documentação adicional
+## Endpoints operacionais
+- `GET /health`
+- `GET /health/readiness`
+- `GET /api/v1/system/runtime`
+- `GET /api/v1/client/config`
+
+## Alinhamento para produção
+- Use `.env.example` como base e troque `SECRET_KEY`.
+- Defina `PUBLIC_BASE_URL`, `CORS_ORIGINS` e `ALLOWED_HOSTS` corretamente.
+- Mantenha `.env`, `app.db`, logs e datasets fora do Git.
+- Use `WORKERS` para ajustar concorrência no servidor.
+- Prefira `DATABASE_URL` com PostgreSQL em implantação pública.
+
+## Documentação
 - `docs/API_DOCUMENTATION.md`
 - `docs/DEPLOYMENT.md`
+- `docs/SCIENTIFIC_READINESS.md`

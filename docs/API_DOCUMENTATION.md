@@ -6,10 +6,16 @@
 ## Endpoints principais
 
 ### `GET /health`
-Status rápido da API.
+Status rápido da aplicação.
+
+### `GET /health/readiness`
+Resumo de prontidão de deploy, storage, segurança e integrações.
 
 ### `GET /client/config`
 Configuração pública consumida pela interface web/mobile.
+
+### `GET /system/runtime`
+Relatório operacional sem expor segredos.
 
 ### `POST /analyze-image`
 Analisa uma imagem de papel hidrossensível.

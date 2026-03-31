@@ -26,6 +26,7 @@ from app.api.routes_new import router
 from app.core.config import settings
 from app.core.database import init_database
 from app.core.exceptions import setup_exception_handlers
+from app.core.runtime import build_runtime_report
 from app.utils.logger import setup_logging
 
 
@@ -45,7 +46,16 @@ async def lifespan(app: FastAPI):
     """Prepara infraestrutura compartilhada na subida da aplicação."""
     setup_logging()
     init_database()
+    runtime_report = build_runtime_report(settings)
     logger.info("Aplicação inicializada")
+    logger.info(
+        "Ambiente={} Banco={} Workers={}",
+        settings.ENVIRONMENT,
+        settings.database_backend,
+        settings.WORKERS,
+    )
+    for warning in runtime_report["warnings"]:
+        logger.warning(warning)
     yield
     logger.info("Aplicação finalizada")
 
@@ -119,13 +129,26 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def health_check():
-        """Verificação de saúde do sistema."""
+        """Verificação rápida de saúde do sistema."""
+        runtime_report = build_runtime_report(settings)
         return {
             "status": "healthy",
             "app_name": settings.APP_NAME,
             "version": settings.APP_VERSION,
+            "environment": settings.ENVIRONMENT,
+            "database_backend": settings.database_backend,
             "root_path": settings.ROOT_PATH,
             "pwa_enabled": settings.ENABLE_PWA,
+            "ready": runtime_report["ready"],
+        }
+
+    @app.get("/health/readiness")
+    async def readiness_check():
+        """Retorna um resumo de prontidão para deploy e operação."""
+        runtime_report = build_runtime_report(settings)
+        return {
+            "status": "ready" if runtime_report["ready"] else "attention",
+            **runtime_report,
         }
 
     return app
@@ -141,6 +164,7 @@ def main():
             host=settings.HOST,
             port=settings.PORT,
             reload=settings.DEBUG,
+            workers=1 if settings.DEBUG else settings.WORKERS,
             log_level=settings.LOG_LEVEL.lower(),
             limit_max_requests=10000,
             timeout_keep_alive=30,

@@ -13,56 +13,49 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Configurações da aplicação."""
 
-    # Aplicação
     APP_NAME: str = "Sistema Inteligente Pulverização"
     APP_VERSION: str = "2.0.0"
+    ENVIRONMENT: str = "development"
     DEBUG: bool = False
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+    WORKERS: int = 1
     ROOT_PATH: str = ""
     PUBLIC_BASE_URL: Optional[str] = None
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ENABLE_PWA: bool = True
+    ENABLE_FILE_LOGGING: bool = True
 
-    # Banco de dados
     DATABASE_URL: Optional[str] = None
     DATABASE_PATH: str = "data/app.db"
 
-    # APIs meteorológicas
     OPENWEATHER_API_KEY: Optional[str] = None
     WEATHERAPI_KEY: Optional[str] = None
     CLIMATEMPO_TOKEN: Optional[str] = None
 
-    # APIs de solo e agricultura
     EMBRAPA_API_KEY: Optional[str] = None
     AGRO_API_TOKEN: Optional[str] = None
 
-    # APIs de geolocalização
     GOOGLE_MAPS_API_KEY: Optional[str] = None
     IBGE_API_URL: str = "https://servicodados.ibge.gov.br/api/v1"
 
-    # Caminhos
     MODEL_PATH: str = "data/models"
     TEMP_UPLOAD_PATH: str = "data/temp/uploads"
     DATASET_PATH: str = "data/dataset"
     LOG_FILE: str = "logs/app.log"
 
-    # Logging
     LOG_LEVEL: str = "INFO"
 
-    # Segurança
     CORS_ORIGINS: List[str] = ["*"]
     ALLOWED_HOSTS: List[str] = ["*"]
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # Configurações de processamento
     MAX_WORKERS: int = 4
     BATCH_SIZE: int = 32
     IMAGE_SIZE: Tuple[int, int] = (512, 512)
     PIXEL_TO_MM: float = 0.1
     DROPLET_COVERAGE_SCALE: float = 1.3
 
-    # Configurações de upload e treinamento
     MAX_IMAGE_SIZE: int = 10 * 1024 * 1024
     MIN_TRAINING_IMAGES: int = 5
 
@@ -96,6 +89,14 @@ class Settings(BaseSettings):
             return ""
         raw_value = str(value).strip()
         return raw_value if raw_value.startswith("/") else f"/{raw_value}"
+
+    @field_validator("ENVIRONMENT", mode="before")
+    @classmethod
+    def normalize_environment(cls, value):
+        """Normaliza o nome do ambiente para comparação consistente."""
+        if value in (None, ""):
+            return "development"
+        return str(value).strip().lower()
 
     @field_validator("PUBLIC_BASE_URL", mode="before")
     @classmethod
@@ -136,6 +137,11 @@ class Settings(BaseSettings):
         return f"sqlite:///{normalized_path}"
 
     @property
+    def database_backend(self) -> str:
+        """Retorna o backend configurado do banco de dados."""
+        return self.resolved_database_url.split(":", maxsplit=1)[0]
+
+    @property
     def sqlite_database_path(self) -> Optional[Path]:
         """Retorna o caminho do arquivo quando o banco configurado é SQLite."""
         database_url = self.resolved_database_url
@@ -143,6 +149,11 @@ class Settings(BaseSettings):
             return None
 
         return Path(database_url.removeprefix("sqlite:///"))
+
+    @property
+    def is_production(self) -> bool:
+        """Indica se a aplicação está rodando em ambiente de produção."""
+        return self.ENVIRONMENT in {"production", "staging"}
 
     @property
     def max_upload_size_mb(self) -> float:

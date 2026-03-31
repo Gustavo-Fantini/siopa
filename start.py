@@ -20,6 +20,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Inicia o servidor FastAPI do projeto")
     parser.add_argument("--host", default=settings.HOST, help="Host de bind do servidor")
     parser.add_argument("--port", type=int, default=settings.PORT, help="Porta de bind do servidor")
+    parser.add_argument("--workers", type=int, default=settings.WORKERS, help="Quantidade de workers do Uvicorn")
     parser.add_argument(
         "--reload",
         action="store_true",
@@ -44,7 +45,7 @@ def get_lan_ip() -> str:
         return "127.0.0.1"
 
 
-def print_urls(host: str, port: int):
+def print_urls(host: str, port: int, workers: int):
     """Exibe URLs úteis para acesso local e via celular."""
     local_host = "127.0.0.1" if host == "0.0.0.0" else host
     base_url = f"http://{local_host}:{port}"
@@ -54,11 +55,13 @@ def print_urls(host: str, port: int):
     print(f"{Fore.GREEN}SIOPA - Servidor pronto para web e mobile")
     print(f"{Fore.GREEN}{'=' * 72}")
     print(f"{Fore.CYAN}Local:      {Style.BRIGHT}{base_url}")
+    print(f"{Fore.CYAN}Ambiente:   {Style.BRIGHT}{settings.ENVIRONMENT}")
+    print(f"{Fore.CYAN}Workers:    {Style.BRIGHT}{workers}")
 
     if host == "0.0.0.0":
         lan_ip = get_lan_ip()
         print(f"{Fore.CYAN}Rede local: {Style.BRIGHT}http://{lan_ip}:{port}")
-        print(f"{Fore.YELLOW}Acesse esse endereço pelo celular na mesma rede Wi‑Fi.")
+        print(f"{Fore.YELLOW}Acesse esse endereço pelo celular na mesma rede Wi-Fi.")
 
     print()
     print(f"- Página principal: {base_url}/")
@@ -66,6 +69,9 @@ def print_urls(host: str, port: int):
     print(f"- Swagger: {base_url}/docs")
     print(f"- ReDoc: {base_url}/redoc")
     print(f"- Health: {base_url}/health")
+    print(f"- Readiness: {base_url}/health/readiness")
+    if settings.ROOT_PATH:
+        print(f"- Root path configurado: {settings.ROOT_PATH}")
     print()
 
 
@@ -78,7 +84,8 @@ def maybe_open_browser(host: str, port: int):
 def main():
     """Ponto de entrada do script."""
     args = parse_args()
-    print_urls(args.host, args.port)
+    effective_workers = 1 if args.reload else max(1, args.workers)
+    print_urls(args.host, args.port, effective_workers)
 
     if args.open_browser:
         maybe_open_browser(args.host, args.port)
@@ -89,6 +96,7 @@ def main():
         host=args.host,
         port=args.port,
         reload=args.reload,
+        workers=effective_workers,
         log_level=settings.LOG_LEVEL.lower(),
         proxy_headers=True,
         forwarded_allow_ips="*",

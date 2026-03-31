@@ -14,6 +14,7 @@ from PIL import Image, UnidentifiedImageError
 
 from app.core.config import settings
 from app.core.exceptions import APIConnectionError, ImageProcessingError, ValidationError
+from app.core.runtime import build_runtime_report
 from app.models.image_analysis import droplet_analyzer
 from app.services.agriculture_service import agriculture_service
 from app.services.recommendation_service import recommendation_service
@@ -392,6 +393,18 @@ async def get_system_stats():
     except Exception as exc:
         logger.error(f"Erro ao obter estatísticas: {exc}")
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/system/runtime")
+async def get_runtime_summary():
+    """
+    Retorna resumo de configuração e prontidão operacional sem expor segredos.
+    """
+    return {
+        "status": "success",
+        "runtime": build_runtime_report(settings),
+        "timestamp": time.time(),
+    }
 
 
 @router.get("/statistics")
