@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0f766e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <title>SIOPA | Mobile Web</title>
+    <style>
+        :root { --bg:#f4f7fb; --card:#fff; --line:#d9e2ec; --text:#102a43; --muted:#52606d; --primary:#0f766e; --accent:#2563eb; --ok:#166534; --warn:#b45309; --bad:#b91c1c; }
+        * { box-sizing:border-box; }
+        body { margin:0; font-family:"Segoe UI",sans-serif; color:var(--text); background:linear-gradient(180deg,#f8fbff 0,var(--bg) 100%); }
+        a { color:inherit; text-decoration:none; }
+        .shell { width:min(1100px,calc(100% - 20px)); margin:0 auto; padding:16px 0 36px; }
+        .hero,.panel,.card,.msg,.loading { background:var(--card); border:1px solid var(--line); border-radius:22px; box-shadow:0 14px 40px rgba(15,23,42,.08); }
+        .hero { padding:22px; background:linear-gradient(135deg,rgba(15,118,110,.96),rgba(37,99,235,.92)); color:#fff; }
+        .hero h1 { margin:10px 0 8px; font-size:clamp(2rem,5vw,3.1rem); line-height:1.05; }
+        .hero p { margin:0; color:rgba(255,255,255,.86); }
+        .pillbar,.hero-actions,.grid,.results,.features,.actions { display:grid; gap:14px; }
+        .pillbar { grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); margin-top:18px; }
+        .pill { padding:14px; border-radius:16px; background:rgba(255,255,255,.14); }
+        .label { display:block; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; opacity:.74; margin-bottom:6px; }
+        .value { font-weight:700; }
+        .hero-actions,.actions { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-top:18px; }
+        .btn { min-height:48px; padding:12px 16px; border-radius:14px; border:1px solid transparent; font:inherit; font-weight:700; cursor:pointer; display:inline-flex; justify-content:center; align-items:center; }
+        .btn.primary { background:#fff; color:var(--primary); }
+        .btn.secondary { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.18); color:#fff; }
+        .btn.ghost { background:transparent; color:var(--primary); border-color:rgba(15,118,110,.18); }
+        .btn:disabled { opacity:.6; cursor:not-allowed; }
+        .panel { padding:22px; margin-top:20px; }
+        .heading { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:16px; }
+        .heading h2,.card h3 { margin:0; }
+        .heading p { margin:4px 0 0; color:var(--muted); }
+        .msg,.loading { display:none; padding:15px 16px; margin-bottom:14px; }
+        .msg.success { display:block; background:#f0fdf4; color:var(--ok); border-color:rgba(22,101,52,.16); }
+        .msg.error { display:block; background:#fef2f2; color:var(--bad); border-color:rgba(185,28,28,.16); }
+        .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .field { display:grid; gap:8px; }
+        .field.full { grid-column:1 / -1; }
+        label { font-weight:700; }
+        input,select { width:100%; min-height:48px; padding:12px 14px; border-radius:14px; border:1px solid var(--line); font:inherit; }
+        input:focus,select:focus { outline:2px solid rgba(37,99,235,.14); border-color:var(--accent); }
+        .upload { display:grid; gap:10px; padding:22px; border-radius:18px; border:2px dashed rgba(15,118,110,.22); background:#eef6f5; text-align:center; cursor:pointer; }
+        .upload.active { border-color:var(--accent); background:#eff6ff; }
+        .hint { color:var(--muted); font-size:.93rem; }
+        .loading-row { display:flex; align-items:center; gap:12px; }
+        .spinner { width:30px; height:30px; border-radius:50%; border:3px solid rgba(37,99,235,.14); border-top-color:var(--accent); animation:spin .8s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .results { grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); display:none; }
+        .card { padding:18px; }
+        .card.full { grid-column:1 / -1; }
+        .metrics,.list { display:grid; gap:10px; margin-top:14px; }
+        .metric { display:flex; justify-content:space-between; gap:10px; padding-bottom:10px; border-bottom:1px solid #edf2f7; font-size:.95rem; }
+        .metric:last-child { border-bottom:none; padding-bottom:0; }
+        .metric .k { color:var(--muted); }
+        .metric .v { font-weight:700; text-align:right; }
+        .tag { display:inline-flex; padding:6px 10px; border-radius:999px; font-size:.82rem; font-weight:700; }
+        .ideal { background:#dcfce7; color:var(--ok); } .good { background:#dbeafe; color:#1d4ed8; } .caution { background:#fef3c7; color:var(--warn); } .poor { background:#fee2e2; color:var(--bad); } .unknown { background:#e2e8f0; color:#475569; }
+        .item { padding:12px 14px; border-radius:14px; background:#f8fafc; }
+        .features { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); margin-top:20px; }
+        @media (max-width:768px) { .shell { width:min(100% - 14px,100%); } .hero,.panel,.card { border-radius:18px; } .grid { grid-template-columns:1fr; } .metric { flex-direction:column; } .metric .v { text-align:left; } }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <section class="hero">
+            <span class="label">Servidor + Mobile + PWA</span>
+            <h1>SIOPA pronto para uso no celular</h1>
+            <p>O processamento fica no servidor e o celular atua como cliente web responsivo, com instalação opcional como app.</p>
+            <div class="pillbar">
+                <div class="pill"><span class="label">Ambiente</span><span class="value" id="deployMode">Carregando…</span></div>
+                <div class="pill"><span class="label">Upload máximo</span><span class="value" id="maxUpload">10 MB</span></div>
+                <div class="pill"><span class="label">Versão</span><span class="value" id="appVersion">-</span></div>
+            </div>
+            <div class="hero-actions">
+                <a class="btn secondary" href="static/annotation.html">Anotação do dataset</a>
+                <a class="btn secondary" href="docs">Documentação da API</a>
+                <button class="btn secondary" type="button" id="installBtn" hidden>Instalar no celular</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="heading">
+                <div><h2>Análise de papel hidrossensível</h2><p>Fluxo ajustado para rede local, servidor publicado e uso em campo.</p></div>
+                <div class="actions"><a class="btn ghost" href="health">Health</a><a class="btn ghost" href="api/v1/dataset/stats">Dataset</a></div>
+            </div>
+            <div id="messageBox" class="msg"></div>
+            <div id="loadingBox" class="loading"><div class="loading-row"><div class="spinner"></div><div><strong>Processando análise</strong><div class="hint">Executando visão computacional, clima e recomendação.</div></div></div></div>
+            <form id="analysisForm">
+                <div class="grid">
+                    <div class="field full">
+                        <label for="imageFile">Imagem</label>
+                        <div class="upload" id="uploadBox">
+                            <strong id="uploadTitle">Toque aqui ou arraste a imagem</strong>
+                            <span class="hint" id="uploadHint">JPG, PNG ou BMP.</span>
+                            <input type="file" id="imageFile" accept="image/*" hidden>
+                        </div>
+                    </div>
+                    <div class="field"><label for="latitude">Latitude</label><input id="latitude" type="number" step="any" placeholder="-22.3155" required></div>
+                    <div class="field"><label for="longitude">Longitude</label><input id="longitude" type="number" step="any" placeholder="-49.0608" required></div>
+                    <div class="field"><label for="cropType">Cultura</label><select id="cropType" required></select></div>
+                    <div class="field"><label for="growthStage">Estágio</label><select id="growthStage"><option value="">Selecione</option></select></div>
+                    <div class="field full"><label for="targetProblem">Problema-alvo</label><input id="targetProblem" type="text" placeholder="Ex.: ferrugem-asiática, lagarta, capim"></div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" id="analyzeBtn" type="submit">Analisar imagem</button>
+                    <button class="btn ghost" id="locationBtn" type="button">Usar localização atual</button>
+                </div>
+            </form>
+            <section class="results" id="resultsGrid"></section>
+        </section>
+
+        <section class="features">
+            <article class="card"><h3>📱 Mobile-first</h3><p class="hint">Botões grandes, cards compactos e suporte a instalação como PWA.</p></article>
+            <article class="card"><h3>🛰️ Execução centralizada</h3><p class="hint">Todo o processamento roda no servidor, simplificando operação e deploy.</p></article>
+            <article class="card"><h3>🧪 Base para pesquisa</h3><p class="hint">API, dataset, exportação e treinamento prontos para evolução científica.</p></article>
+            <article class="card"><h3>🔒 Publicação mais segura</h3><p class="hint">Configuração separada, CORS configurável e estrutura adequada para servidor.</p></article>
+        </section>
+    </main>
+    <script>
+        const uploadBox = document.getElementById('uploadBox');
+        const imageFile = document.getElementById('imageFile');
+        const cropType = document.getElementById('cropType');
+        const growthStage = document.getElementById('growthStage');
+        const messageBox = document.getElementById('messageBox');
+        const loadingBox = document.getElementById('loadingBox');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const installBtn = document.getElementById('installBtn');
+        const fallbackCrops = [
+            { key:'soja', name:'Soja', growth_stages:['germinação','vegetativo','floração','enchimento_grãos','maturação'] },
+            { key:'milho', name:'Milho', growth_stages:['germinação','vegetativo','pendoamento','espigamento','maturação'] },
+            { key:'algodao', name:'Algodão', growth_stages:['germinação','vegetativo','floração','frutificação','abertura_capulhos'] },
+            { key:'cana', name:'Cana-de-açúcar', growth_stages:['brotação','perfilhamento','crescimento','maturação'] }
+        ];
+        let deferredPrompt = null;
+
+        function showMessage(text, type='success') { messageBox.textContent = text; messageBox.className = `msg ${type}`; }
+        function clearMessage() { messageBox.textContent = ''; messageBox.className = 'msg'; }
+        function setLoading(active) { loadingBox.style.display = active ? 'block' : 'none'; analyzeBtn.disabled = active; }
+        function asTag(value) { const cls = ['ideal','good','caution','poor'].includes(String(value).toLowerCase()) ? String(value).toLowerCase() : 'unknown'; const map = { ideal:'Ideal', good:'Boa', caution:'Atenção', poor:'Inadequada', unknown:'Indefinida' }; return `<span class="tag ${cls}">${map[cls]}</span>`; }
+        function renderItems(items) { return (items && items.length ? items : ['Nenhuma observação adicional.']).map((item) => `<div class="item">${item}</div>`).join(''); }
+        function populateCrops(crops) {
+            cropType.innerHTML = '<option value="">Selecione</option>';
+            crops.forEach((crop) => { const option = document.createElement('option'); option.value = crop.key; option.textContent = crop.name; option.dataset.stages = JSON.stringify(crop.growth_stages || []); cropType.appendChild(option); });
+            updateStages();
+        }
+        function updateStages() {
+            const stages = cropType.selectedOptions[0]?.dataset.stages ? JSON.parse(cropType.selectedOptions[0].dataset.stages) : [];
+            growthStage.innerHTML = '<option value="">Selecione</option>';
+            stages.forEach((stage) => { const option = document.createElement('option'); option.value = stage; option.textContent = stage; growthStage.appendChild(option); });
+        }
+        function updateUpload(file) {
+            uploadBox.classList.add('active');
+            document.getElementById('uploadTitle').textContent = file.name;
+            document.getElementById('uploadHint').textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB • pronto para análise`;
+        }
+        async function loadConfig() {
+            try {
+                const response = await fetch('api/v1/client/config');
+                if (!response.ok) throw new Error();
+                const config = await response.json();
+                document.getElementById('deployMode').textContent = config.public_base_url ? 'Servidor publicado' : 'Mesma rede/localhost';
+                document.getElementById('maxUpload').textContent = `${config.max_upload_size_mb} MB`;
+                document.getElementById('appVersion').textContent = config.app_version || '-';
+                populateCrops(config.supported_crops || fallbackCrops);
+            } catch {
+                document.getElementById('deployMode').textContent = 'Configuração local';
+                document.getElementById('maxUpload').textContent = '10 MB';
+                document.getElementById('appVersion').textContent = 'local';
+                populateCrops(fallbackCrops);
+            }
+        }
+        function requestLocation() {
+            if (!navigator.geolocation) { showMessage('Geolocalização não suportada pelo navegador.', 'error'); return; }
+            navigator.geolocation.getCurrentPosition(
+                (position) => { document.getElementById('latitude').value = position.coords.latitude.toFixed(6); document.getElementById('longitude').value = position.coords.longitude.toFixed(6); showMessage('Localização preenchida com sucesso.'); },
+                (error) => showMessage(`Não foi possível obter a localização: ${error.message}`, 'error'),
+                { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+            );
+        }
+        function renderResults(data) {
+            const analysis = data.analysis || {}, weather = data.weather || {}, agriculture = data.agriculture || {}, rec = data.recommendations || {}, pesticide = rec.pesticide || {}, dosage = rec.dosage || {}, app = rec.application || {}, productWeather = app.pesticide_weather_suitability || {};
+            resultsGrid.innerHTML = `
+                <article class="card"><h3>Análise</h3><div class="metrics">
+                    <div class="metric"><span class="k">Total</span><span class="v">${analysis.total_droplets || 0}</span></div>
+                    <div class="metric"><span class="k">Cobertura</span><span class="v">${Number(analysis.coverage_percentage || 0).toFixed(2)}%</span></div>
+                    <div class="metric"><span class="k">CV</span><span class="v">${Number(analysis.cv_coefficient || 0).toFixed(2)}%</span></div>
+                    <div class="metric"><span class="k">DV50</span><span class="v">${Number(analysis.dv50_diameter || 0).toFixed(2)} μm</span></div>
+                    <div class="metric"><span class="k">Densidade</span><span class="v">${Number(analysis.density_per_cm2 || 0).toFixed(2)} got/cm²</span></div>
+                    <div class="metric"><span class="k">Classe</span><span class="v">${analysis.droplet_class || 'N/A'}</span></div>
+                </div></article>
+                <article class="card"><h3>Clima</h3><div class="metrics">
+                    <div class="metric"><span class="k">Temperatura</span><span class="v">${weather.temperature ?? 0} °C</span></div>
+                    <div class="metric"><span class="k">Umidade</span><span class="v">${weather.humidity ?? 0}%</span></div>
+                    <div class="metric"><span class="k">Vento</span><span class="v">${weather.wind_speed ?? 0} km/h</span></div>
+                    <div class="metric"><span class="k">Pressão</span><span class="v">${weather.pressure ?? 0} hPa</span></div>
+                    <div class="metric"><span class="k">Adequação</span><span class="v">${asTag(app.weather_suitability || weather.spray_conditions?.overall_rating || 'unknown')}</span></div>
+                </div></article>
+                <article class="card"><h3>Cultura</h3><div class="metrics">
+                    <div class="metric"><span class="k">Nome</span><span class="v">${agriculture.name || 'N/A'}</span></div>
+                    <div class="metric"><span class="k">Científico</span><span class="v">${agriculture.scientific_name || 'N/A'}</span></div>
+                    <div class="metric"><span class="k">Bico</span><span class="v">${agriculture.spray_recommendations?.nozzle_type || 'N/A'}</span></div>
+                    <div class="metric"><span class="k">Volume</span><span class="v">${agriculture.spray_recommendations?.volume_ha || 'N/A'} L/ha</span></div>
+                </div></article>
+                <article class="card"><h3>Produto recomendado</h3><div class="metrics">
+                    <div class="metric"><span class="k">Produto</span><span class="v">${pesticide.name || 'N/A'}</span></div>
+                    <div class="metric"><span class="k">Ingrediente ativo</span><span class="v">${pesticide.active_ingredient || 'N/A'}</span></div>
+                    <div class="metric"><span class="k">Dosagem</span><span class="v">${Number(dosage.recommended || 0).toFixed(2)} ${dosage.unit || 'L/ha'}</span></div>
+                    <div class="metric"><span class="k">Horário</span><span class="v">${app.timing || 'N/A'}</span></div>
+                    <div class="metric"><span class="k">Confiança</span><span class="v">${rec.confidence || 0}%</span></div>
+                </div></article>
+                <article class="card full"><h3>Recomendações práticas</h3><div class="list">${renderItems([...(analysis.recommendations || []), ...(rec.recommendations || [])])}</div></article>
+                <article class="card full"><h3>Adequação climática do produto</h3><div class="metrics">
+                    <div class="metric"><span class="k">Situação</span><span class="v">${asTag(productWeather.rating || 'unknown')}</span></div>
+                    <div class="metric"><span class="k">Resumo</span><span class="v">${productWeather.summary || 'Sem observações'}</span></div>
+                </div><div class="list" style="margin-top:14px;">${renderItems(productWeather.issues || [])}</div></article>`;
+            resultsGrid.style.display = 'grid';
+        }
+        async function submitAnalysis(event) {
+            event.preventDefault();
+            clearMessage();
+            if (!imageFile.files[0]) { showMessage('Selecione uma imagem antes de continuar.', 'error'); return; }
+            const formData = new FormData();
+            formData.append('file', imageFile.files[0]);
+            formData.append('latitude', document.getElementById('latitude').value);
+            formData.append('longitude', document.getElementById('longitude').value);
+            formData.append('crop_type', cropType.value);
+            formData.append('growth_stage', growthStage.value);
+            formData.append('target_problem', document.getElementById('targetProblem').value);
+            setLoading(true); resultsGrid.style.display = 'none';
+            try {
+                const response = await fetch('api/v1/analyze-image', { method:'POST', body:formData });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Falha ao analisar imagem');
+                renderResults(data);
+                showMessage('Análise concluída com sucesso.');
+            } catch (error) {
+                showMessage(`Erro na análise: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        function setupInstallPrompt() {
+            window.addEventListener('beforeinstallprompt', (event) => { event.preventDefault(); deferredPrompt = event; installBtn.hidden = false; });
+            installBtn.addEventListener('click', async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; installBtn.hidden = true; });
+        }
+        function setupServiceWorker() { if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(() => undefined); }
+        uploadBox.addEventListener('click', () => imageFile.click());
+        imageFile.addEventListener('change', () => { if (imageFile.files[0]) updateUpload(imageFile.files[0]); });
+        ['dragenter','dragover'].forEach((name) => uploadBox.addEventListener(name, (event) => { event.preventDefault(); uploadBox.classList.add('active'); }));
+        ['dragleave','drop'].forEach((name) => uploadBox.addEventListener(name, (event) => { event.preventDefault(); if (name !== 'drop' || imageFile.files[0]) uploadBox.classList.remove('active'); }));
+        uploadBox.addEventListener('drop', (event) => { const files = event.dataTransfer?.files; if (files?.length) { imageFile.files = files; updateUpload(files[0]); } });
+        cropType.addEventListener('change', updateStages);
+        document.getElementById('locationBtn').addEventListener('click', requestLocation);
+        document.getElementById('analysisForm').addEventListener('submit', submitAnalysis);
+        setupInstallPrompt();
+        setupServiceWorker();
+        loadConfig();
+    </script>
+</body>
+</html>

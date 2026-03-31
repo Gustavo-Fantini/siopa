@@ -1,0 +1,18 @@
+{
+  "name": "SIOPA",
+  "short_name": "SIOPA",
+  "description": "Sistema Inteligente de Pulverização com acesso web mobile.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
