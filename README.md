@@ -51,6 +51,7 @@ docker compose --profile postgres up --build -d
 
 ## Alinhamento para produção
 - Use `.env.example` como base e troque `SECRET_KEY`.
+- Use `.env.production.local` no servidor quando quiser reaproveitar as credenciais atuais sem publicar segredos.
 - Defina `PUBLIC_BASE_URL`, `CORS_ORIGINS` e `ALLOWED_HOSTS` corretamente.
 - Mantenha `.env`, `app.db`, logs e datasets fora do Git.
 - Use `WORKERS` para ajustar concorrência no servidor.
@@ -60,3 +61,4 @@ docker compose --profile postgres up --build -d
 - `docs/API_DOCUMENTATION.md`
 - `docs/DEPLOYMENT.md`
 - `docs/SCIENTIFIC_READINESS.md`
+- `docs/PRESENTATION_CHECKLIST.md`

@@ -45,11 +45,12 @@ docker compose --profile postgres up --build -d
 
 ## Checklist mínimo de publicação
 1. Copie `.env.example` para `.env`.
-2. Troque `SECRET_KEY`.
-3. Ajuste `PUBLIC_BASE_URL`, `CORS_ORIGINS` e `ALLOWED_HOSTS`.
-4. Confirme `GET /health/readiness`.
-5. Valide `GET /api/v1/system/runtime`.
-6. Ative HTTPS no proxy reverso.
+2. Se quiser reaproveitar as chaves atuais, use `.env.production.local` como base local privada.
+3. Troque `SECRET_KEY`.
+4. Ajuste `PUBLIC_BASE_URL`, `CORS_ORIGINS` e `ALLOWED_HOSTS`.
+5. Confirme `GET /health/readiness`.
+6. Valide `GET /api/v1/system/runtime`.
+7. Ative HTTPS no proxy reverso.
 
 ## Uso no celular
 - Conecte o celular na mesma rede do servidor.
