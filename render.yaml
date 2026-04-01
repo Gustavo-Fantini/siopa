@@ -1,0 +1,80 @@
+services:
+  - type: web
+    name: siopa
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    disk:
+      name: siopa-data
+      mountPath: /app/data
+      sizeGB: 5
+    envVars:
+      - key: APP_NAME
+        value: SIOPA
+      - key: APP_VERSION
+        value: 2.0.0
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: WORKERS
+        value: 1
+      - key: ROOT_PATH
+        value: ""
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENABLE_PWA
+        value: true
+      - key: ENABLE_FILE_LOGGING
+        value: true
+      - key: DATABASE_URL
+        value: sqlite:////app/data/app.db
+      - key: MODEL_PATH
+        value: /app/data/models
+      - key: TEMP_UPLOAD_PATH
+        value: /app/data/temp/uploads
+      - key: DATASET_PATH
+        value: /app/data/dataset
+      - key: LOG_FILE
+        value: /app/data/logs/app.log
+      - key: LOG_LEVEL
+        value: INFO
+      - key: CORS_ORIGINS
+        value: '["*"]'
+      - key: ALLOWED_HOSTS
+        value: '["*"]'
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: WEATHERAPI_KEY
+        sync: false
+      - key: CLIMATEMPO_TOKEN
+        sync: false
+      - key: EMBRAPA_API_KEY
+        sync: false
+      - key: AGRO_API_TOKEN
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: IBGE_API_URL
+        value: https://servicodados.ibge.gov.br/api/v1
+      - key: BATCH_SIZE
+        value: 32
+      - key: IMAGE_SIZE
+        value: "[512,512]"
+      - key: PIXEL_TO_MM
+        value: 0.1
+      - key: DROPLET_COVERAGE_SCALE
+        value: 1.3
+      - key: MAX_IMAGE_SIZE
+        value: 10485760
+      - key: MIN_TRAINING_IMAGES
+        value: 5

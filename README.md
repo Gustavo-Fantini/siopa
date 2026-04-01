@@ -43,6 +43,13 @@ Para usar PostgreSQL no mesmo ambiente:
 docker compose --profile postgres up --build -d
 ```
 
+## Deploy no Render
+- O repositório já inclui `render.yaml` para deploy por Blueprint.
+- Para manter `app.db`, `models` e `dataset`, use disco persistente no serviço.
+- O Blueprint atual já monta o disco em `/app/data` e usa `DATABASE_URL=sqlite:////app/data/app.db`.
+- Depois de criar o serviço, preencha os segredos pendentes no painel do Render.
+- Se quiser usar plano gratuito, não conte com SQLite persistente; nesse caso, migre para Postgres.
+
 ## Endpoints operacionais
 - `GET /health`
 - `GET /health/readiness`

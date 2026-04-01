@@ -52,6 +52,33 @@ docker compose --profile postgres up --build -d
 6. Valide `GET /api/v1/system/runtime`.
 7. Ative HTTPS no proxy reverso.
 
+## Deploy no Render
+
+### Situação atual do projeto
+- O projeto está apto para Render com `render.yaml`.
+- O arquivo `render.yaml` usa runtime Docker, `healthCheckPath: /health` e disco persistente em `/app/data`.
+- O SQLite foi configurado para `sqlite:////app/data/app.db`, preservando seu `app.db` entre deploys.
+
+### Observação crítica
+- Se você subir em um serviço sem disco persistente, o conteúdo de `app.db`, `models`, `dataset` e uploads pode ser perdido em restart ou novo deploy.
+- Para manter o fluxo atual com SQLite, use um plano com disk.
+- Se quiser usar Render sem disk, o caminho correto é migrar `DATABASE_URL` para Postgres.
+
+### Passo a passo
+1. No Render, escolha `New +` → `Blueprint`.
+2. Aponte para este repositório.
+3. Confirme o serviço `siopa` definido em `render.yaml`.
+4. Preencha `PUBLIC_BASE_URL` com a URL pública do serviço Render.
+5. Preencha as chaves `OPENWEATHER_API_KEY`, `WEATHERAPI_KEY`, `AGRO_API_TOKEN` e demais integrações necessárias.
+6. Faça o primeiro deploy.
+7. Valide `https://SEU-SERVICO.onrender.com/health`.
+8. Valide `https://SEU-SERVICO.onrender.com/health/readiness`.
+
+### Ajustes recomendados após subir
+- Trocar `CORS_ORIGINS=["*"]` por sua URL pública real.
+- Trocar `ALLOWED_HOSTS=["*"]` pelo host do Render e seu domínio final.
+- Exportar backup periódico do `app.db`.
+
 ## Uso no celular
 - Conecte o celular na mesma rede do servidor.
 - Descubra o IP local da máquina.
