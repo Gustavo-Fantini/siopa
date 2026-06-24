@@ -1,28 +1,29 @@
 # SIOPA
 
-Sistema Inteligente de Otimização da Pulverização Agrícola.
+Sistema Inteligente de Otimizacao da Pulverizacao Agricola.
 
-## Contexto acadêmico
+## Contexto academico
 - Projeto de TCC da ETEC Rodrigues de Abreu.
-- Autores: Cauã Fernandes Jorge, Guilherme Cardoso Galelli, Gustavo Teodoro Fantini e Jeferson Aguilar Junior.
-- Objetivo atual: executar integralmente no servidor, com acesso mobile via navegador e base técnica pronta para iniciação científica.
+- Autoria academica registrada: Caua Fernandes Jorge, Guilherme Cardoso Galelli, Gustavo Teodoro Fantini e Jeferson Aguilar Junior.
+- Contato operacional atual do repositorio: Gustavo Teodoro Fantini.
+- Objetivo tecnico atual: executar integralmente no servidor, com acesso mobile via navegador e base tecnica pronta para evolucao cientifica.
 
 ## Capacidades do projeto
-- Analisa papel hidrossensível com visão computacional.
-- Calcula cobertura, densidade, CV, DV50 e métricas correlatas.
-- Integra clima e contexto agronômico.
-- Gera recomendações operacionais e de produto.
-- Mantém fluxo de dataset, anotação e treinamento.
+- Analisa papel hidrossensivel com visao computacional.
+- Calcula cobertura, densidade, CV, DV50 e metricas correlatas.
+- Integra clima e contexto agronomico.
+- Gera recomendacoes operacionais e de produto.
+- Mantem fluxo de dataset, anotacao e treinamento.
 
 ## Stack atual
 - `FastAPI` no backend HTTP.
-- `SQLAlchemy` para persistência.
-- `OpenCV` e `Pillow` para análise de imagem.
-- `PWA` mobile-first em `app/static/`.
-- `Docker` e `docker-compose` para deploy reproduzível.
-- `GitHub Actions` para validação automática básica.
+- `SQLAlchemy` para persistencia.
+- `OpenCV` e `Pillow` para analise de imagem.
+- `PWA` mobile-first em `app/static/`, com frontend principal separado em `app.css` e `app.js`.
+- `Docker` e `docker-compose` para deploy reproduzivel.
+- `GitHub Actions` para validacao automatica basica e deploy de EC2.
 
-## Execução local
+## Execucao local
 ```bash
 pip install -r requirements.txt
 copy .env.example .env
@@ -33,7 +34,7 @@ Depois acesse:
 - `http://localhost:8000`
 - `http://SEU_IP_LOCAL:8000` pelo celular na mesma rede
 
-## Execução com Docker Compose
+## Execucao com Docker Compose
 ```bash
 docker compose up --build -d
 ```
@@ -44,11 +45,18 @@ docker compose --profile postgres up --build -d
 ```
 
 ## Deploy no Render
-- O repositório já inclui `render.yaml` para deploy por Blueprint.
-- Para manter `app.db`, `models` e `dataset`, use disco persistente no serviço.
-- O Blueprint atual já monta o disco em `/app/data` e usa `DATABASE_URL=sqlite:////app/data/app.db`.
-- Depois de criar o serviço, preencha os segredos pendentes no painel do Render.
-- Se quiser usar plano gratuito, não conte com SQLite persistente; nesse caso, migre para Postgres.
+- O repositorio ja inclui `render.yaml` para deploy por Blueprint.
+- Para manter `app.db`, `models` e `dataset`, use disco persistente no servico.
+- O Blueprint atual ja monta o disco em `/app/data` e usa `DATABASE_URL=sqlite:////app/data/app.db`.
+- Depois de criar o servico, preencha os segredos pendentes no painel do Render.
+- Se quiser usar plano gratuito, nao conte com SQLite persistente; nesse caso, migre para Postgres.
+
+## Deploy em EC2
+- `docker-compose.prod.yml` sobe app + proxy reverso HTTPS.
+- `deploy/Caddyfile` publica o dominio e encaminha trafego para o FastAPI.
+- `scripts/ec2/deploy.sh` padroniza o deploy no servidor.
+- `.github/workflows/deploy-ec2.yml` automatiza a atualizacao via GitHub Actions.
+- Instrucoes completas: `docs/DEPLOYMENT_EC2.md`
 
 ## Endpoints operacionais
 - `GET /health`
@@ -56,16 +64,23 @@ docker compose --profile postgres up --build -d
 - `GET /api/v1/system/runtime`
 - `GET /api/v1/client/config`
 
-## Alinhamento para produção
-- Use `.env.example` como base e troque `SECRET_KEY`.
-- Use `.env.production.local` no servidor quando quiser reaproveitar as credenciais atuais sem publicar segredos.
-- Defina `PUBLIC_BASE_URL`, `CORS_ORIGINS` e `ALLOWED_HOSTS` corretamente.
-- Mantenha `.env`, `app.db`, logs e datasets fora do Git.
-- Use `WORKERS` para ajustar concorrência no servidor.
-- Prefira `DATABASE_URL` com PostgreSQL em implantação pública.
+## Alinhamento para producao
+- Use `.env.example` como base local e `.env.production.example` como base para o servidor.
+- Troque `SECRET_KEY` antes de publicar.
+- Defina `PUBLIC_BASE_URL`, `CORS_ORIGINS`, `ALLOWED_HOSTS` e `DOMAIN` corretamente.
+- Mantenha `.env`, bancos, logs e datasets fora do Git.
+- Use `WORKERS` para ajustar concorrencia no servidor.
+- Prefira `DATABASE_URL` com PostgreSQL em implantacoes publicas de maior escala.
 
-## Documentação
+## Documentacao
 - `docs/API_DOCUMENTATION.md`
 - `docs/DEPLOYMENT.md`
+- `docs/DEPLOYMENT_EC2.md`
+- `docs/LGPD_OPERACIONAL.md`
 - `docs/SCIENTIFIC_READINESS.md`
 - `docs/PRESENTATION_CHECKLIST.md`
+
+## Autoria e direitos
+- Autoria e contato operacional: `AUTHORS.md`
+- Status atual de direitos e licenciamento: `LICENSE.md`
+- Avisos de atribuicao e cautelas de uso: `NOTICE.md`

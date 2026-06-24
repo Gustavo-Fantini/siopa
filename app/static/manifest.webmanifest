@@ -1,12 +1,12 @@
 {
   "name": "SIOPA",
   "short_name": "SIOPA",
-  "description": "Sistema Inteligente de Pulverização com acesso web mobile.",
+  "description": "Analise mobile de pulverizacao com apoio de imagem, clima e cultura.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f7fb",
-  "theme_color": "#0f766e",
+  "background_color": "#f1eadf",
+  "theme_color": "#52683b",
   "icons": [
     {
       "src": "icon.svg",

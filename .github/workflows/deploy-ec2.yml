@@ -1,0 +1,60 @@
+name: Deploy EC2
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ec2-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy current branch on EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_PORT: ${{ secrets.EC2_PORT }}
+          EC2_PROJECT_DIR: ${{ secrets.EC2_PROJECT_DIR }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          DEPLOY_REF: ${{ github.ref_name }}
+          REPO_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          ssh -p "${EC2_PORT:-22}" "${EC2_USER}@${EC2_HOST}" <<EOF
+          set -euo pipefail
+          PROJECT_DIR="${EC2_PROJECT_DIR}"
+          REPO_URL="${REPO_URL}"
+          DEPLOY_REF="${DEPLOY_REF}"
+
+          mkdir -p "\$PROJECT_DIR"
+          if [ ! -d "\$PROJECT_DIR/.git" ]; then
+            git clone "\$REPO_URL" "\$PROJECT_DIR"
+          fi
+
+          cd "\$PROJECT_DIR"
+          git fetch --prune origin
+          git checkout "\$DEPLOY_REF"
+          git pull --ff-only origin "\$DEPLOY_REF"
+          chmod +x scripts/ec2/deploy.sh
+          ./scripts/ec2/deploy.sh
+          EOF
