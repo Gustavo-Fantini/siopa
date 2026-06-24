@@ -76,6 +76,8 @@ docker compose --profile postgres up --build -d
 - `docs/API_DOCUMENTATION.md`
 - `docs/DEPLOYMENT.md`
 - `docs/DEPLOYMENT_EC2.md`
+- `docs/EC2_RUNBOOK.md`
+- `docs/GITHUB_ACTIONS_SECRETS.md`
 - `docs/LGPD_OPERACIONAL.md`
 - `docs/SCIENTIFIC_READINESS.md`
 - `docs/PRESENTATION_CHECKLIST.md`

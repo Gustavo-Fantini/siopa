@@ -8,9 +8,12 @@
 ## Arquivos adicionados para producao
 - `docker-compose.prod.yml`: stack de producao com app + Caddy
 - `deploy/Caddyfile`: proxy reverso com HTTPS automatico
+- `deploy/bootstrap-ubuntu.sh`: prepara Ubuntu com Docker oficial
 - `scripts/ec2/deploy.sh`: rotina padrao de deploy no servidor
 - `.github/workflows/deploy-ec2.yml`: atualizacao automatica a cada push em `main`
 - `.env.production.example`: base para o `.env` do servidor
+- `docs/EC2_RUNBOOK.md`: passo a passo operacional completo
+- `docs/GITHUB_ACTIONS_SECRETS.md`: modelo pronto dos secrets
 
 ## Arquitetura recomendada
 1. EC2 Linux com IP estatico
@@ -55,3 +58,7 @@
 - logs ficam no volume `siopa_logs`
 - certificados HTTPS ficam em `caddy_data`
 - antes de alteracoes maiores, gere backup dos volumes persistentes
+
+## Guias complementares
+- bootstrap e primeira subida: `docs/EC2_RUNBOOK.md`
+- cadastro de secrets do GitHub: `docs/GITHUB_ACTIONS_SECRETS.md`
