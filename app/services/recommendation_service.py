@@ -823,7 +823,13 @@ class PesticideRecommendationService:
             
             # Obtém dados contextuais
             weather_data = await weather_service.get_current_weather(latitude, longitude)
-            crop_info = await agriculture_service.get_crop_info(crop_type)
+            crop_info = await agriculture_service.get_crop_info(
+                crop_type,
+                growth_stage,
+                latitude,
+                longitude,
+            )
+            soil_info = await agriculture_service.get_soil_info(latitude, longitude)
             
             temperature = weather_data.get('temperature', 25)
             humidity = weather_data.get('humidity', 70)
@@ -842,6 +848,13 @@ class PesticideRecommendationService:
                 temperature=temperature,
                 humidity=humidity,
                 wind_speed=wind_speed
+            )
+
+            pressures = self._apply_contextual_pressure_adjustments(
+                pressures=pressures,
+                crop_info=crop_info,
+                soil_info=soil_info,
+                weather_data=weather_data,
             )
 
             logger.info(f"Pressões calculadas: {pressures}")
@@ -917,6 +930,13 @@ class PesticideRecommendationService:
 
             # Recomendações gerais baseadas em clima e análise de gotículas
             base_recommendations = self._generate_recommendations(weather_data, analysis_results)
+            base_recommendations.extend(
+                self._build_contextual_notes(
+                    crop_info=crop_info,
+                    soil_info=soil_info,
+                    weather_data=weather_data,
+                )
+            )
 
             # Complementa recomendações com avaliação climática específica do pesticida
             pesticide_rating = pesticide_weather.get('rating', 'unknown')
@@ -983,6 +1003,21 @@ class PesticideRecommendationService:
                 },
                 'confidence': round(confidence * 100, 1),
                 'recommendations': base_recommendations,
+                'reasoning': self._build_reasoning_summary(
+                    pressures=pressures,
+                    crop_info=crop_info,
+                    soil_info=soil_info,
+                    weather_data=weather_data,
+                ),
+                'context': {
+                    'regional_context': crop_info.get('regional_context'),
+                    'regional_profile': crop_info.get('regional_profile'),
+                    'soil': {
+                        'soil_type': soil_info.get('soil_type'),
+                        'moisture_status': soil_info.get('moisture_status'),
+                        'source': soil_info.get('source'),
+                    },
+                },
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -1320,6 +1355,106 @@ class PesticideRecommendationService:
             'disease_pressure': float(round(disease_pressure, 2)),
             'weed_pressure': float(round(weed_pressure, 2))
         }
+
+    def _apply_contextual_pressure_adjustments(
+        self,
+        pressures: Dict[str, float],
+        crop_info: Dict,
+        soil_info: Dict,
+        weather_data: Dict,
+    ) -> Dict[str, float]:
+        """Adjust rule-based pressures with region and soil context."""
+
+        adjusted = dict(pressures or {})
+        regional_context = crop_info.get('regional_context', {}) or {}
+        regional_profile = crop_info.get('regional_profile', {}) or {}
+        alerts = [str(item).lower() for item in regional_profile.get('alerts', [])]
+        biome = str(regional_context.get('bioma', '') or '')
+        humidity = float(weather_data.get('humidity') or 0.0)
+        wind_speed = float(weather_data.get('wind_speed') or 0.0)
+        moisture_status = str(soil_info.get('moisture_status', '') or '')
+
+        if biome == 'Amazonia' or any('doenca' in alert or 'ferrugem' in alert for alert in alerts):
+            adjusted['disease_pressure'] = min(10.0, adjusted.get('disease_pressure', 0.0) + 0.7)
+
+        if biome == 'Caatinga':
+            adjusted['pest_pressure'] = min(10.0, adjusted.get('pest_pressure', 0.0) + 0.4)
+            adjusted['weed_pressure'] = min(10.0, adjusted.get('weed_pressure', 0.0) + 0.5)
+
+        if biome == 'Pantanal':
+            adjusted['disease_pressure'] = min(10.0, adjusted.get('disease_pressure', 0.0) + 0.4)
+
+        if moisture_status == 'baixa':
+            adjusted['weed_pressure'] = min(10.0, adjusted.get('weed_pressure', 0.0) + 0.4)
+            adjusted['pest_pressure'] = min(10.0, adjusted.get('pest_pressure', 0.0) + 0.3)
+        elif moisture_status in {'alta', 'muito_alta'}:
+            adjusted['disease_pressure'] = min(10.0, adjusted.get('disease_pressure', 0.0) + 0.4)
+
+        if humidity >= 80:
+            adjusted['disease_pressure'] = min(10.0, adjusted.get('disease_pressure', 0.0) + 0.3)
+        if wind_speed >= 14:
+            adjusted['weed_pressure'] = min(10.0, adjusted.get('weed_pressure', 0.0) + 0.2)
+
+        return {
+            key: float(round(value, 2))
+            for key, value in adjusted.items()
+        }
+
+    def _build_contextual_notes(self, crop_info: Dict, soil_info: Dict, weather_data: Dict) -> List[str]:
+        """Generate extra recommendation bullets from region, soil and forecast context."""
+
+        notes: List[str] = []
+        regional_context = crop_info.get('regional_context', {}) or {}
+        regional_profile = crop_info.get('regional_profile', {}) or {}
+        soil_type = soil_info.get('soil_type')
+        moisture_status = soil_info.get('moisture_status')
+        location = regional_context.get('municipio')
+        biome = regional_context.get('bioma')
+
+        if location and biome:
+            notes.append(f"Contexto regional: {location}/{regional_context.get('uf', 'BR')} no bioma {biome}.")
+
+        for alert in regional_profile.get('alerts', [])[:2]:
+            notes.append(str(alert))
+
+        if soil_type and moisture_status:
+            notes.append(f"Solo dominante {soil_type} com umidade classificada como {moisture_status}.")
+
+        spray_summary = weather_data.get('spray_conditions', {}).get('summary')
+        if spray_summary:
+            notes.append(spray_summary)
+
+        deduped: List[str] = []
+        seen = set()
+        for note in notes:
+            normalized = str(note).strip().lower()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            deduped.append(note)
+        return deduped
+
+    def _build_reasoning_summary(
+        self,
+        pressures: Dict[str, float],
+        crop_info: Dict,
+        soil_info: Dict,
+        weather_data: Dict,
+    ) -> str:
+        """Summarize the main factors behind the recommendation."""
+
+        dominant_key = max(pressures, key=pressures.get) if pressures else 'indefinida'
+        dominant_value = pressures.get(dominant_key, 0.0) if pressures else 0.0
+        regional_context = crop_info.get('regional_context', {}) or {}
+        biome = regional_context.get('bioma', 'desconhecido')
+        moisture = soil_info.get('moisture_status', 'desconhecida')
+        weather_rating = weather_data.get('spray_conditions', {}).get('overall_rating', 'unknown')
+
+        return (
+            f"Pressao dominante: {dominant_key} ({dominant_value:.1f}/10), "
+            f"bioma {biome}, umidade do solo {moisture}, "
+            f"janela meteorologica {weather_rating}."
+        )
 
     def _select_pesticide_by_pressures(
         self,

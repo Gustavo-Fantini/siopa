@@ -120,7 +120,12 @@ async def analyze_image(
 
         analysis_results = droplet_analyzer.process_image(str(temp_path))
         weather_data = await weather_service.get_current_weather(latitude, longitude)
-        agriculture_data = await agriculture_service.get_crop_info(crop_type, growth_stage)
+        agriculture_data = await agriculture_service.get_crop_info(
+            crop_type,
+            growth_stage,
+            latitude,
+            longitude,
+        )
         recommendations = await recommendation_service.get_pesticide_recommendation(
             analysis_results=analysis_results,
             latitude=latitude,
@@ -246,7 +251,12 @@ async def get_agriculture_info(
     Obtém informações sobre culturas agrícolas.
     """
     try:
-        agriculture_data = await agriculture_service.get_crop_info(crop_type, growth_stage)
+        agriculture_data = await agriculture_service.get_crop_info(
+            crop_type,
+            growth_stage,
+            latitude,
+            longitude,
+        )
 
         response = {
             "status": "success",

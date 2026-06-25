@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     IMAGE_SIZE: Tuple[int, int] = (512, 512)
     PIXEL_TO_MM: float = 0.1
     DROPLET_COVERAGE_SCALE: float = 1.3
+    MICROPOROUS_PAPER_WIDTH_MM: float = 76.0
+    MICROPOROUS_PAPER_HEIGHT_MM: float = 26.0
+    PAPER_ANALYSIS_LONG_EDGE_PX: int = 1200
+    PAPER_BORDER_MARGIN_RATIO: float = 0.02
+    MIN_DROPLET_RADIUS_MM: float = 0.03
+    MAX_DROPLET_RADIUS_MM: float = 1.25
 
     MAX_IMAGE_SIZE: int = 10 * 1024 * 1024
     MIN_TRAINING_IMAGES: int = 5
@@ -97,6 +103,22 @@ class Settings(BaseSettings):
         if value in (None, ""):
             return "development"
         return str(value).strip().lower()
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def normalize_debug_flag(cls, value):
+        """Aceita booleanos e aliases comuns como release/prod."""
+        if isinstance(value, bool):
+            return value
+        if value in (None, ""):
+            return False
+
+        raw_value = str(value).strip().lower()
+        if raw_value in {"1", "true", "yes", "on", "debug", "development"}:
+            return True
+        if raw_value in {"0", "false", "no", "off", "release", "prod", "production"}:
+            return False
+        return value
 
     @field_validator("PUBLIC_BASE_URL", mode="before")
     @classmethod

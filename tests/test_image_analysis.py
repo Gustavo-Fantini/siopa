@@ -1,6 +1,4 @@
-"""
-Testes para o módulo de análise de imagens.
-"""
+"""Tests for the droplet image analysis pipeline."""
 
 import os
 import tempfile
@@ -14,51 +12,79 @@ from app.models.image_analysis import DropletAnalyzer
 
 
 class TestDropletAnalyzer:
-    """Testes para o analisador de gotículas."""
+    """Behavioral coverage for the droplet analyzer."""
 
     @pytest.fixture
     def analyzer(self):
         return DropletAnalyzer()
 
     @pytest.fixture
-    def sample_image(self):
-        img = np.zeros((512, 512, 3), dtype=np.uint8)
-        img.fill(255)
+    def sample_paper_image(self):
+        image = np.full((720, 960, 3), 28, dtype=np.uint8)
 
-        centers = [(100, 100), (200, 150), (300, 200), (150, 300)]
-        for center in centers:
-            cv2.circle(img, center, 15, (255, 0, 0), -1)
+        paper = np.array(
+            [
+                [140, 170],
+                [810, 150],
+                [835, 420],
+                [120, 430],
+            ],
+            dtype=np.int32,
+        )
+        cv2.fillConvexPoly(image, paper, (0, 190, 255))
 
-        temp_file = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
-        cv2.imwrite(temp_file.name, img)
+        droplet_color = (150, 40, 25)
+        for center in [(245, 245), (365, 285), (610, 265), (705, 335)]:
+            cv2.circle(image, center, 8, droplet_color, -1)
 
-        yield temp_file.name
-        os.unlink(temp_file.name)
+        # One merged mark to validate double-droplet detection.
+        cv2.circle(image, (485, 240), 8, droplet_color, -1)
+        cv2.circle(image, (497, 240), 8, droplet_color, -1)
 
-    def test_preprocess_image(self, analyzer, sample_image):
-        img = cv2.imread(sample_image)
-        processed, metadata = analyzer.preprocess_image(img)
+        # Noise outside the paper should not matter after ROI extraction.
+        cv2.line(image, (30, 40), (80, 95), (255, 255, 255), 2)
+
+        fd, temp_path = tempfile.mkstemp(suffix=".jpg")
+        os.close(fd)
+        cv2.imwrite(temp_path, image)
+
+        yield temp_path
+        os.unlink(temp_path)
+
+    def test_preprocess_image_detects_paper(self, analyzer, sample_paper_image):
+        image = cv2.imread(sample_paper_image)
+        processed, metadata = analyzer.preprocess_image(image)
 
         assert processed is not None
-        assert processed.shape == analyzer.input_size + (3,)
-        assert "original_shape" in metadata
-        assert "scale" in metadata
+        assert processed.ndim == 3
+        assert metadata["paper_detected"] is True
+        assert metadata["analysis_mm_per_px"] > 0
+        assert metadata["analysis_area_px"] > 0
 
-    def test_process_image_success(self, analyzer, sample_image):
-        result = analyzer.process_image(sample_image)
+    def test_process_image_success(self, analyzer, sample_paper_image):
+        result = analyzer.process_image(sample_paper_image)
+
         assert "total_droplets" in result
         assert "coverage_percentage" in result
         assert "processing_time" in result
+        assert result["paper_detected"] is True
+        assert result["candidate_droplets"] >= result["valid_droplets"]
+        assert result["analysis_scale_mm_per_px"] > 0
+
+    def test_double_droplets_are_flagged(self, analyzer, sample_paper_image):
+        result = analyzer.process_image(sample_paper_image)
+        assert result["double_droplets"] >= 1
+        assert result["duplicated_droplets"] >= 1
 
     def test_process_nonexistent_image(self, analyzer):
         with pytest.raises(ImageProcessingError):
             analyzer.process_image("nonexistent_image.jpg")
 
     def test_quality_score_calculation(self, analyzer):
-        score = analyzer._calculate_quality_score(20.0, 10.0, 100.0)
+        score = analyzer._calculate_quality_score(20.0, 10.0, 100.0, double_ratio=0.0)
         assert 0 <= score <= 100
 
-        bad_score = analyzer._calculate_quality_score(3.0, 55.0, 260.0)
+        bad_score = analyzer._calculate_quality_score(3.0, 55.0, 260.0, double_ratio=0.4)
         assert bad_score < score
 
     def test_quality_assessment(self, analyzer):
@@ -69,13 +95,16 @@ class TestDropletAnalyzer:
 
     def test_generate_recommendations(self, analyzer):
         low_coverage = analyzer._generate_recommendations(4.0, 8.0, 80.0)
-        assert any("cobertura" in rec.lower() for rec in low_coverage)
+        assert any("Cobertura" in rec for rec in low_coverage)
 
         high_cv = analyzer._generate_recommendations(20.0, 20.0, 80.0)
-        assert any("calibra" in rec.lower() for rec in high_cv)
+        assert any("Distribuicao" in rec for rec in high_cv)
+
+        doubles = analyzer._generate_recommendations(20.0, 8.0, 100.0, double_ratio=0.2)
+        assert any("duplas" in rec for rec in doubles)
 
         ideal = analyzer._generate_recommendations(20.0, 8.0, 100.0)
-        assert any("ideais" in rec.lower() for rec in ideal)
+        assert any("ideais" in rec.lower() or "parametros ideais" in rec.lower() for rec in ideal)
 
 
 if __name__ == "__main__":

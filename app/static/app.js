@@ -339,6 +339,9 @@ function renderResults(data) {
     const dosage = recommendations.dosage || {};
     const application = recommendations.application || {};
     const productWeather = application.pesticide_weather_suitability || {};
+    const context = recommendations.context || {};
+    const regionalContext = agriculture.regional_context || context.regional_context || {};
+    const soilContext = context.soil || {};
     const decision = buildDecisionState(data);
     const practicalItems = mergeRecommendations(
         analysis.recommendations,
@@ -353,11 +356,15 @@ function renderResults(data) {
 
     elements.analysisMetrics.innerHTML = [
         metricRow("Total de gotas", escapeHtml(formatInteger(analysis.total_droplets || 0))),
+        metricRow("Gotas validas", escapeHtml(formatInteger(analysis.valid_droplets || analysis.total_droplets || 0))),
+        metricRow("Gotas duplas", escapeHtml(formatInteger(analysis.double_droplets || analysis.duplicated_droplets || 0))),
         metricRow("Cobertura", escapeHtml(formatNumber(analysis.coverage_percentage || 0, 2, "%"))),
         metricRow("Densidade", escapeHtml(formatNumber(analysis.density_per_cm2 || 0, 2, " got/cm2"))),
         metricRow("CV", escapeHtml(formatNumber(analysis.cv_coefficient || 0, 2, "%"))),
         metricRow("DV50", escapeHtml(formatNumber(analysis.dv50_diameter || 0, 2, " um"))),
         metricRow("Classe da gota", escapeHtml(analysis.droplet_class || "N/A")),
+        metricRow("Papel detectado", buildBadge(analysis.paper_detected ? "sim" : "nao", analysis.paper_detected ? "good" : "warn")),
+        metricRow("Escala", escapeHtml(formatNumber(analysis.analysis_scale_mm_per_px || 0, 4, " mm/px"))),
     ].join("");
 
     elements.weatherMetrics.innerHTML = [
@@ -371,9 +378,13 @@ function renderResults(data) {
     elements.agricultureMetrics.innerHTML = [
         metricRow("Cultura", escapeHtml(agriculture.name || "N/A")),
         metricRow("Nome cientifico", escapeHtml(agriculture.scientific_name || "N/A")),
+        metricRow("Municipio", escapeHtml(regionalContext.municipio || "N/A")),
+        metricRow("Bioma", escapeHtml(regionalContext.bioma || "N/A")),
         metricRow("Bico sugerido", escapeHtml(agriculture.spray_recommendations?.nozzle_type || "N/A")),
         metricRow("Volume", escapeHtml(agriculture.spray_recommendations?.volume_ha ? `${agriculture.spray_recommendations.volume_ha} L/ha` : "N/A")),
         metricRow("Pressao", escapeHtml(agriculture.spray_recommendations?.pressure || "N/A")),
+        metricRow("Solo", escapeHtml(soilContext.soil_type || "N/A")),
+        metricRow("Umidade solo", escapeHtml(soilContext.moisture_status || "N/A")),
     ].join("");
 
     elements.productMetrics.innerHTML = [

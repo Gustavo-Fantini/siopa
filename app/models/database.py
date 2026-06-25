@@ -4,8 +4,7 @@ Sistema Inteligente de Pulverização - TCC ETEC
 """
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, JSON, LargeBinary
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 from typing import Dict, List, Optional

@@ -10,8 +10,10 @@ Sistema Inteligente de Otimizacao da Pulverizacao Agricola.
 
 ## Capacidades do projeto
 - Analisa papel hidrossensivel com visao computacional.
+- Detecta o retangulo amarelo/laranja, corrige perspectiva e calibra a escala em mm/px.
+- Separa gotas validas, gotas duplas, marcas de borda e ruido antes do calculo final.
 - Calcula cobertura, densidade, CV, DV50 e metricas correlatas.
-- Integra clima e contexto agronomico.
+- Integra clima, contexto regional por latitude/longitude, solo e base agronomica por bioma.
 - Gera recomendacoes operacionais e de produto.
 - Mantem fluxo de dataset, anotacao e treinamento.
 
@@ -28,6 +30,12 @@ Sistema Inteligente de Otimizacao da Pulverizacao Agricola.
 pip install -r requirements.txt
 copy .env.example .env
 python start.py --host 0.0.0.0 --port 8000
+```
+
+## Testes rapidos
+```bash
+python -m pytest -q
+python -m compileall app tests
 ```
 
 Depois acesse:
@@ -68,6 +76,7 @@ docker compose --profile postgres up --build -d
 - Use `.env.example` como base local e `.env.production.example` como base para o servidor.
 - Troque `SECRET_KEY` antes de publicar.
 - Defina `PUBLIC_BASE_URL`, `CORS_ORIGINS`, `ALLOWED_HOSTS` e `DOMAIN` corretamente.
+- Ajuste `MICROPOROUS_PAPER_WIDTH_MM`, `MICROPOROUS_PAPER_HEIGHT_MM` e os limites de gotas se usar outro papel ou outro protocolo de leitura.
 - Mantenha `.env`, bancos, logs e datasets fora do Git.
 - Use `WORKERS` para ajustar concorrencia no servidor.
 - Prefira `DATABASE_URL` com PostgreSQL em implantacoes publicas de maior escala.
