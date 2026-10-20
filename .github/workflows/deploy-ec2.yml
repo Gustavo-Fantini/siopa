@@ -1,60 +1,107 @@
 name: Deploy EC2
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
     branches: ["main"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
+# Do not interrupt an in-flight production update with another SSH session.
 concurrency:
   group: deploy-ec2-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  configuration:
     runs-on: ubuntu-latest
-    environment: production
-
+    timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.policy.outputs.enabled }}
+      sha: ${{ steps.policy.outputs.sha }}
     steps:
-      - name: Checkout
+      - name: Check deployment policy and tested commit
+        id: policy
+        uses: actions/github-script@v8
+        env:
+          ENABLE_EC2_DEPLOY: ${{ vars.ENABLE_EC2_DEPLOY }}
+        with:
+          script: |
+            core.setOutput('enabled', 'false');
+            const skip = async (reason) => {
+              core.notice(reason);
+              await core.summary.addHeading('EC2: nenhuma publicacao realizada')
+                .addRaw(reason).write();
+            };
+            if (process.env.ENABLE_EC2_DEPLOY !== 'true') {
+              await skip('Deploy opcional desativado. Configure a variavel de repositorio ENABLE_EC2_DEPLOY=true somente depois dos secrets EC2. CI e APK independem da EC2. Veja docs/GITHUB_ACTIONS_SECRETS.md.');
+              return;
+            }
+            const run = context.payload.workflow_run;
+            if (context.eventName === 'workflow_run' && (
+              run.event !== 'push' || run.head_branch !== 'main' ||
+              run.head_repository?.full_name !== `${context.repo.owner}/${context.repo.repo}` ||
+              run.conclusion !== 'success'
+            )) {
+              await skip('Deploy automatico exige CI aprovado em um push de main neste repositorio.');
+              return;
+            }
+            if (context.eventName === 'workflow_dispatch' && context.ref !== 'refs/heads/main') {
+              core.setFailed('Execute o deploy manual somente na branch main.');
+              return;
+            }
+            const sha = run?.head_sha || context.sha;
+            // A manual dispatch must meet the same CI requirement as an automatic run.
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              ...context.repo, workflow_id: 'ci.yml', head_sha: sha,
+              branch: 'main', event: 'push', per_page: 100
+            });
+            const latest = data.workflow_runs.sort((a, b) => b.id - a.id)[0];
+            if (!latest || latest.status !== 'completed' || latest.conclusion !== 'success') {
+              core.setFailed('O commit selecionado ainda nao tem o CI de main concluido com sucesso. Aguarde o CI antes de executar novamente.');
+              return;
+            }
+            const { data: branch } = await github.rest.repos.getBranch({ ...context.repo, branch: 'main' });
+            if (branch.commit.sha !== sha) {
+              await skip('Este commit foi substituido em main. Aguarde o CI do commit mais recente.');
+              return;
+            }
+            core.setOutput('sha', sha);
+            core.setOutput('enabled', 'true');
+
+  deploy:
+    needs: configuration
+    if: needs.configuration.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_PORT: ${{ secrets.EC2_PORT }}
+      EC2_PROJECT_DIR: ${{ secrets.EC2_PROJECT_DIR }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+      DEPLOY_SHA: ${{ needs.configuration.outputs.sha }}
+      REPO_URL: https://github.com/${{ github.repository }}.git
+    steps:
+      - name: Checkout tested commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.configuration.outputs.sha }}
+          persist-credentials: false
 
-      - name: Prepare SSH
+      - name: Validate configuration and prepare SSH
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          EC2_KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
+        run: bash scripts/ec2/prepare-ssh.sh
 
-      - name: Deploy current branch on EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_PORT: ${{ secrets.EC2_PORT }}
-          EC2_PROJECT_DIR: ${{ secrets.EC2_PROJECT_DIR }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          DEPLOY_REF: ${{ github.ref_name }}
-          REPO_URL: https://github.com/${{ github.repository }}.git
-        run: |
-          ssh -p "${EC2_PORT:-22}" "${EC2_USER}@${EC2_HOST}" <<EOF
-          set -euo pipefail
-          PROJECT_DIR="${EC2_PROJECT_DIR}"
-          REPO_URL="${REPO_URL}"
-          DEPLOY_REF="${DEPLOY_REF}"
+      - name: Deploy tested commit on EC2
+        run: bash scripts/ec2/deploy-remote.sh
 
-          mkdir -p "\$PROJECT_DIR"
-          if [ ! -d "\$PROJECT_DIR/.git" ]; then
-            git clone "\$REPO_URL" "\$PROJECT_DIR"
-          fi
-
-          cd "\$PROJECT_DIR"
-          git fetch --prune origin
-          git checkout "\$DEPLOY_REF"
-          git pull --ff-only origin "\$DEPLOY_REF"
-          chmod +x scripts/ec2/deploy.sh
-          ./scripts/ec2/deploy.sh
-          EOF
+      - name: Remove temporary SSH credentials
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/siopa-ec2/key" "$RUNNER_TEMP/siopa-ec2/known_hosts"

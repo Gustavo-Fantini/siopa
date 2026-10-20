@@ -44,6 +44,12 @@ resultados permanecem no IndexedDB; o fluxo principal não faz upload de imagens
 Não há servidor público fixo embutido no APK: a atualização usa endereço HTTPS
 configurado pelo usuário. Chaves pagas ficam no servidor, nunca no APK.
 
+O deploy EC2 é opcional e desativado sem a variável de repositório
+`ENABLE_EC2_DEPLOY=true`. Quando habilitado, exige CI aprovado para o SHA exato
+de `main`, secrets completos e host key SSH fixada. O push e o CI independem de
+EC2; nenhuma hospedagem é criada por esse controle. Operação e diagnóstico:
+[GITHUB_ACTIONS_SECRETS.md](GITHUB_ACTIONS_SECRETS.md).
+
 ## Responsabilidades e contratos
 
 | Grupo | Responsabilidade |

@@ -1,41 +1,41 @@
-# EC2 runbook
+# Runbook do deploy EC2 opcional
 
-## Escopo
-Este runbook deixa a instancia pronta para receber o SIOPA com:
-- dominio publico
-- HTTPS automatico
-- deploy por GitHub Actions
-- stack Docker reproduzivel
+Este roteiro é para quem decidiu hospedar o backend numa instância existente
+ou preparada por seu administrador. **EC2 não é requisito para push, CI ou APK**.
+Sem hospedagem, mantenha `ENABLE_EC2_DEPLOY` ausente/desativada: o deploy é
+ignorado explicitamente e a análise Android permanece local.
 
-## 1. AWS antes do login no servidor
+Os comandos abaixo são instruções para a operação futura autorizada. Alterar
+este guia não cria servidor, DNS, credenciais ou publicação.
 
-### EC2
-- Ubuntu LTS atual suportado pelo Docker
-- tipo inicial sugerido: `t3.small` ou superior
-- disco EBS com espaco suficiente para dataset, logs e banco
+## 1. Preparar servidor e rede quando a hospedagem for desejada
 
-### Elastic IP
-- aloque um Elastic IP
-- associe o Elastic IP a instancia
+Use Linux suportado pelo Docker, disco dimensionado para os dados e backups,
+e endereço público/DNS estável. Exponha 80/443 ao tráfego do site; a porta 8000
+permanece interna ao Compose.
 
-### Security group
-- `22/tcp` liberado apenas para seu IP administrativo
-- `80/tcp` liberado para `0.0.0.0/0`
-- `443/tcp` liberado para `0.0.0.0/0`
+Restrinja a porta SSH às origens autorizadas. Confira **também a origem de rede
+do runner de deploy**: permitir somente o IP do computador administrativo não
+permite automaticamente a entrada dos runners hospedados do GitHub. Prepare um
+caminho autorizado para a automação, com saída conhecida ou conexão privada
+quando aplicável, sem ampliar indiscriminadamente o acesso para corrigir timeout.
+Se SSH usar porta personalizada, use-a no security group, firewall, cliente e
+`EC2_PORT`.
 
-## 2. DNS publico
-- crie um registro `A` apontando o subdominio do app para o Elastic IP
-- exemplo: `app.seu-dominio.com -> 203.0.113.10`
+Para DNS, um registro `A` deve apontar ao endereço público escolhido. Hostnames,
+IPs e caminhos neste documento são placeholders; substitua-os antes de executar.
 
-## 3. Login e bootstrap
+## 2. Acesso administrativo e bootstrap
 
-Conecte por SSH:
+Conecte com a chave administrativa já provisionada, verificando a identidade do
+servidor por canal confiável:
 
 ```bash
-ssh -i sua-chave.pem ubuntu@SEU_ELASTIC_IP
+ssh -p 22 -i sua-chave.pem ubuntu@SEU_ELASTIC_IP
 ```
 
-No servidor, execute:
+Na sessão do servidor, instale Git e use o bootstrap se Docker/Compose ainda
+precisarem de preparação:
 
 ```bash
 sudo apt-get update
@@ -44,9 +44,12 @@ git clone https://github.com/Gustavo-Fantini/siopa.git /tmp/siopa-bootstrap
 sudo DEPLOY_USER=ubuntu PROJECT_DIR=/srv/siopa bash /tmp/siopa-bootstrap/deploy/bootstrap-ubuntu.sh
 ```
 
-Depois reconecte na sessao SSH para o grupo `docker` ser aplicado.
+Revise o script antes da execução e reconecte depois para aplicar o grupo
+`docker`. Se o host já estiver preparado, não é necessário repetir o bootstrap.
 
-## 4. Preparar o projeto no servidor
+## 3. Projeto, configuração e commit inicial
+
+Clone apenas se o diretório ainda não contiver o projeto:
 
 ```bash
 git clone https://github.com/Gustavo-Fantini/siopa.git /srv/siopa
@@ -54,69 +57,98 @@ cd /srv/siopa
 cp .env.production.example .env
 ```
 
-Gere uma `SECRET_KEY` forte:
+Não sobrescreva um `.env` existente. Configure nele domínio, `PUBLIC_BASE_URL`,
+`SECRET_KEY` forte, `CORS_ORIGINS` e `ALLOWED_HOSTS`. Integrações com credenciais
+são opcionais conforme uso; o cliente Open-Meteo aberto funciona sem chave,
+respeitados os [termos das fontes](DATA_SOURCES.md).
 
-```bash
-openssl rand -hex 32
-```
+Dataset/anotação/treino permanecem desativados por padrão. Caso sejam necessários,
+configure o controle administrativo e as opções documentadas do projeto antes
+de expô-los. `.env`, bancos, modelos, fotos e chaves não devem ser commitados.
 
-Edite `.env` e preencha pelo menos:
-- `DOMAIN=app.seu-dominio.com`
-- `PUBLIC_BASE_URL=https://app.seu-dominio.com`
-- `SECRET_KEY=<valor-gerado>`
-- `CORS_ORIGINS=["https://app.seu-dominio.com"]`
-- `ALLOWED_HOSTS=["app.seu-dominio.com"]`
-- chaves reais de clima e integracoes, se usadas
+Antes da primeira publicação manual, selecione o **SHA aprovado no CI** que
+deseja instalar. A branch `main` pode ter avançado desde a aprovação: confira o
+commit, não apenas o nome da branch. Preserve arquivos e dados locais; não use
+reset ou limpeza destrutiva para contornar uma divergência sem revisão.
 
-## 5. Primeiro deploy
+## 4. Primeira subida e verificação
+
+Com o commit desejado e a configuração revisados:
 
 ```bash
 cd /srv/siopa
-chmod +x scripts/ec2/deploy.sh
+git rev-parse HEAD
 bash scripts/ec2/deploy.sh
-```
-
-Validacoes:
-
-```bash
 docker compose -f docker-compose.prod.yml ps
-curl -I https://app.seu-dominio.com/health
-curl https://app.seu-dominio.com/health/readiness
-curl https://app.seu-dominio.com/api/v1/system/runtime
+curl --fail --show-error https://app.seu-dominio.com/health
+curl --fail --show-error https://app.seu-dominio.com/health/readiness
 ```
 
-## 6. Segredos do GitHub Actions
+Confira estado dos containers e conteúdo de prontidão, além do retorno HTTP.
+A rota `/api/v1/system/runtime` também oferece diagnóstico; confira a prontidão
+em `/health/readiness`. Uma imagem construída ou um comando finalizado sem erro
+não basta para afirmar que o serviço público está saudável.
 
-Cadastre no repositorio:
-- `EC2_HOST=app.seu-dominio.com` ou o Elastic IP
-- `EC2_PORT=22`
-- `EC2_USER=ubuntu`
-- `EC2_PROJECT_DIR=/srv/siopa`
-- `EC2_SSH_KEY=<conteudo da chave privada>`
+## 5. Chave de acesso de deploy e host key
 
-## 7. Configurar a chave SSH do deploy
+Provisione por seu procedimento administrativo uma chave **dedicada à automação**
+e autorize sua pública em `~/.ssh/authorized_keys` do usuário escolhido. Restrinja
+permissões de `~/.ssh` e `authorized_keys` a 700/600. A privada usada pelo job
+deve funcionar sem interação; uma passphrase exige suporte explícito a
+agent/passphrase, não apenas copiar o arquivo.
 
-Na sua maquina local, gere uma chave dedicada:
+Separadamente, obtenha a **host key do servidor** e a fingerprint pela console
+ou sessão já confiável. Por exemplo, para Ed25519:
 
 ```bash
-ssh-keygen -t ed25519 -C "github-actions-siopa" -f ./siopa-ec2-ed25519
+sudo cat /etc/ssh/ssh_host_ed25519_key.pub
+sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub -E sha256
 ```
 
-Adicione a chave publica no servidor:
+Use a pública para montar `EC2_KNOWN_HOSTS` com o host exato do deploy. O formato
+é `host tipo chave` na porta 22, ou `[host]:porta tipo chave` em porta personalizada.
+Se preferir uma coleta local com `ssh-keyscan -T 10 -p PORTA`, **compare antes**
+a fingerprint com a console; a coleta por rede sozinha não autentica o host.
+O passo a passo está em [GITHUB_ACTIONS_SECRETS.md](GITHUB_ACTIONS_SECRETS.md).
 
-```bash
-mkdir -p ~/.ssh
-cat siopa-ec2-ed25519.pub >> ~/.ssh/authorized_keys
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/authorized_keys
-```
+Ao recriar a instância ou trocar sua host key, o pin anterior deve fazer a
+conexão falhar. Valide a mudança pela console antes de atualizá-lo; não desative
+a verificação de identidade para obter um status verde.
 
-Coloque o conteudo de `siopa-ec2-ed25519` em `EC2_SSH_KEY`.
+## 6. Secrets e habilitação no GitHub
 
-## 8. Teste do fluxo automatico
-- faca um commit em `main`
-- confirme a execucao do workflow `Deploy EC2`
-- confirme no servidor:
+Configure os secrets no repositório ou no environment `production` utilizado
+pelo job:
+
+| Nome | Exemplo/instrução |
+| --- | --- |
+| `EC2_HOST` | Host ou IP, sem protocolo, porta ou caminho. |
+| `EC2_PORT` | Opcional; padrão 22, ou a porta SSH configurada. |
+| `EC2_USER` | Usuário Linux com a pública de deploy autorizada. |
+| `EC2_PROJECT_DIR` | Diretório absoluto, por exemplo `/srv/siopa`. |
+| `EC2_SSH_KEY` | Privada dedicada completa, preservando quebras de linha. |
+| `EC2_KNOWN_HOSTS` | Entrada(s) de host key verificadas para o host/porta usados. |
+
+Depois, em Settings → Secrets and variables → Actions → Variables, defina
+**no repositório** `ENABLE_EC2_DEPLOY=true`. Não dependa de uma variável existente
+somente no environment para decidir o início do job.
+
+Se a flag estiver desativada, nenhuma implantação é tentada. Se estiver
+habilitada e a configuração for incompleta/inválida, o preflight deve falhar
+identificando os nomes faltantes, sem mostrar valores. A flag não substitui as
+proteções e aprovações do environment.
+
+## 7. Verificar a atualização automática ou manual
+
+O fluxo automático é: push em `main` → CI aprovado para o mesmo SHA → gate de
+EC2 habilitado → validações SSH → publicação do **SHA exato** → verificação do
+serviço. O servidor não deve fazer um `git pull main` indiscriminado para
+instalar um commit mais novo sem CI.
+
+O acionamento manual fica restrito a `main` e deve comprovar aprovação de CI
+para o SHA escolhido. Não o use para contornar testes pendentes/falhos.
+
+Após uma execução real de deploy, compare o SHA indicado no workflow com:
 
 ```bash
 cd /srv/siopa
@@ -124,11 +156,35 @@ git rev-parse HEAD
 docker compose -f docker-compose.prod.yml ps
 ```
 
-## 9. Checklist de fechamento
-- dominio resolvendo para o Elastic IP
-- `https://app.seu-dominio.com` abrindo sem aviso de certificado
-- `health` e `readiness` respondendo
-- `.env` presente apenas no servidor
-- `SECRET_KEY` trocada
-- GitHub Actions com secrets preenchidos
-- SSH restrito ao seu IP no security group
+Confira também HTTPS e prontidão. Um job ignorado não publicou o aplicativo;
+desativar novos deploys também não desliga uma instância já em funcionamento.
+
+## 8. Diagnosticar falhas sem esconder o resultado
+
+Na execução investigada em **20/10/2026**, o CI/backend passou e `Prepare SSH`
+falhou com `EC2_HOST` e `EC2_SSH_KEY` vazios. O erro refletia configuração EC2
+ausente. Quem trabalha apenas no código/Android pode deixar EC2 desativada.
+
+- **Configuração ausente com gate habilitado:** confira os nomes e o escopo dos
+  secrets; mantenha a falha até corrigir ou desative explicitamente o deploy.
+- **Timeout/conexão recusada:** confira DNS, porta, daemon SSH e acesso de rede
+  do runner; a regra do seu computador não cobre automaticamente o runner.
+- **Host key divergente:** verifique identidade pela console, incluindo host e
+  porta, antes de qualquer atualização do pin.
+- **Chave inválida/autenticação negada:** confira formato, quebras de linha,
+  passphrase, usuário e pública autorizada.
+- **CI não aprovado para o SHA:** aguarde ou corrija o CI desse commit.
+- **SSH funciona, aplicação falha:** examine build, configuração, containers e
+  prontidão. Não use `continue-on-error` para declarar a publicação concluída.
+
+Validar YAML, parâmetros ou formato da chave localmente não comprova acesso ao
+servidor. Os três resultados a distinguir são: deploy ignorado, tentativa falha
+e commit confirmado no servidor com serviço saudável.
+
+## 9. Operação e backup
+
+Mantenha domínio/HTTPS válidos, segredo forte, origens restritas e um caminho de
+SSH autorizado para administração e runner. Preserve volumes de dados, logs e
+certificados e faça backup antes de alterações relevantes. Não compartilhe
+chaves ou `.env` nos logs de diagnóstico. Consulte também
+[DEPLOYMENT_EC2.md](DEPLOYMENT_EC2.md) e a política operacional do projeto.

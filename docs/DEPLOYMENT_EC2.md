@@ -1,64 +1,101 @@
-# Deploy EC2 com dominio publico
+# Deploy EC2 opcional com domínio público
 
-## Objetivo
-- publicar o SIOPA em uma instancia EC2 com HTTPS
-- manter atualizacao automatica a partir do GitHub
-- preservar dados do app e certificados entre deploys
+EC2 é uma opção de hospedagem do backend com HTTPS. **Push, CI e geração do APK
+não dependem de EC2**. A análise no Android continua local; cadastrar código no
+GitHub ou obter CI aprovado não comprova que exista um servidor publicado.
 
-## Arquivos adicionados para producao
-- `docker-compose.prod.yml`: stack de producao com app + Caddy
-- `deploy/Caddyfile`: proxy reverso com HTTPS automatico
-- `deploy/bootstrap-ubuntu.sh`: prepara Ubuntu com Docker oficial
-- `scripts/ec2/deploy.sh`: rotina padrao de deploy no servidor
-- `.github/workflows/deploy-ec2.yml`: atualizacao automatica a cada push em `main`
-- `.env.production.example`: base para o `.env` do servidor
-- `docs/EC2_RUNBOOK.md`: passo a passo operacional completo
-- `docs/GITHUB_ACTIONS_SECRETS.md`: modelo pronto dos secrets
+Sem a variável de repositório `ENABLE_EC2_DEPLOY=true`, o deploy é explicitamente
+ignorado. Não é necessário criar infraestrutura ou preencher secrets apenas
+para manter o repositório, testar o projeto ou compilar o app.
 
-## Arquitetura recomendada
-1. EC2 Linux com IP estatico
-2. DNS publico apontando para o IP da instancia
-3. Docker Engine + Docker Compose plugin instalados no host
-4. Stack em `docker-compose.prod.yml`
-5. Caddy recebendo trafego em 80/443 e encaminhando para o FastAPI em `app:8000`
+## Componentes
 
-## Primeira subida no servidor
-1. clone o repositorio na EC2
-2. copie `.env.production.example` para `.env`
-3. ajuste `DOMAIN`, `PUBLIC_BASE_URL`, `SECRET_KEY`, `CORS_ORIGINS`, `ALLOWED_HOSTS` e chaves de integracao
-4. execute `bash scripts/ec2/deploy.sh`
-5. valide:
-   - `https://SEU-DOMINIO/health`
-   - `https://SEU-DOMINIO/health/readiness`
-   - `https://SEU-DOMINIO/api/v1/system/runtime`
+| Arquivo | Função |
+| --- | --- |
+| `docker-compose.prod.yml` | Aplicação e proxy Caddy, com volumes persistentes. |
+| `deploy/Caddyfile` | HTTPS e encaminhamento para `app:8000`. |
+| `deploy/bootstrap-ubuntu.sh` | Preparação opcional do servidor Ubuntu. |
+| `scripts/ec2/deploy.sh` | Validação da configuração e atualização da stack no servidor. |
+| `.github/workflows/deploy-ec2.yml` | Deploy habilitado explicitamente, vinculado a CI e commit aprovado. |
+| `.env.production.example` | Modelo de configuração local ao servidor, sem credenciais reais. |
 
-## Segredos necessarios no GitHub Actions
-- `EC2_HOST`: IP publico ou DNS da instancia
-- `EC2_PORT`: porta SSH, normalmente `22`
-- `EC2_USER`: usuario Linux do servidor
-- `EC2_SSH_KEY`: chave privada usada pelo GitHub Actions
-- `EC2_PROJECT_DIR`: diretorio do projeto no servidor, ex. `/srv/siopa`
+## Preparação quando houver um servidor
 
-## Fluxo automatico de atualizacao
-1. voce faz push na branch `main`
-2. o workflow `Deploy EC2` abre uma sessao SSH no servidor
-3. o servidor executa `git fetch`, `git checkout`, `git pull --ff-only`
-4. o script `scripts/ec2/deploy.sh` reconstrui e sobe a stack
+1. Prepare Linux, Docker Engine e Compose, armazenamento e acesso administrativo.
+2. Configure DNS para o endereço público da instância e mantenha Caddy em 80/443.
+3. Clone o repositório no diretório de deploy e selecione um commit aprovado no CI.
+4. Copie `.env.production.example` para `.env` **no servidor** e ajuste domínio,
+   `PUBLIC_BASE_URL`, `SECRET_KEY`, `CORS_ORIGINS` e `ALLOWED_HOSTS`.
+5. Configure integrações opcionais conforme necessidade. O clima aberto não exige
+   contratar um provedor; observe as condições de uso em [DATA_SOURCES.md](DATA_SOURCES.md).
+6. Execute `bash scripts/ec2/deploy.sh` e confira a saúde e o SHA publicado.
 
-## Publicacao segura
-- mantenha o repositorio com `.env` apenas no servidor
-- restrinja `ALLOWED_HOSTS` e `CORS_ORIGINS` ao dominio final
-- troque `SECRET_KEY` antes da publicacao
-- deixe a porta `8000` apenas na rede interna do compose
-- exponha para a internet apenas `80` e `443`
-- limite o acesso SSH a IPs administrativos sempre que possivel
+Verifique `https://SEU-DOMINIO/health` e `/health/readiness`, incluindo o conteúdo
+da resposta. HTTP 200 isolado não comprova prontidão de todas as dependências.
+O roteiro detalhado está em [EC2_RUNBOOK.md](EC2_RUNBOOK.md).
 
-## Operacao e backup
-- dados do app ficam no volume `siopa_data`
-- logs ficam no volume `siopa_logs`
-- certificados HTTPS ficam em `caddy_data`
-- antes de alteracoes maiores, gere backup dos volumes persistentes
+## Configuração do GitHub Actions
 
-## Guias complementares
-- bootstrap e primeira subida: `docs/EC2_RUNBOOK.md`
-- cadastro de secrets do GitHub: `docs/GITHUB_ACTIONS_SECRETS.md`
+Somente após a preparação, cadastre os secrets `EC2_HOST`, `EC2_USER`,
+`EC2_PROJECT_DIR`, `EC2_SSH_KEY` e **`EC2_KNOWN_HOSTS`**. `EC2_PORT` permite porta
+personalizada; se ausente, usa 22. O host não deve conter protocolo ou caminho.
+Os secrets podem pertencer ao repositório ou ao environment `production` usado
+pelo job.
+
+Verifique a host key pela console/sessão administrativa confiável antes de
+preencher `EC2_KNOWN_HOSTS`. A chave de host identifica o servidor; a chave de
+deploy autentica o usuário. Não crie confiança com uma varredura não verificada
+durante o workflow. Os formatos e a comparação de fingerprint estão em
+[GITHUB_ACTIONS_SECRETS.md](GITHUB_ACTIONS_SECRETS.md).
+
+Cadastre então a variável **de repositório** `ENABLE_EC2_DEPLOY=true` em
+Settings → Secrets and variables → Actions → Variables. Habilitado o deploy,
+secrets ausentes ou inválidos devem causar falha de preflight, com os nomes
+necessários e sem expor valores.
+
+## Fluxo automático e manual
+
+1. O push de `main` executa o CI normalmente, com ou sem EC2.
+2. O workflow de deploy considera a conclusão bem-sucedida do CI para esse push,
+   no próprio repositório, e verifica a habilitação explícita.
+3. O preflight valida os parâmetros e a chave/pin usados no SSH.
+4. O servidor recebe o **SHA exato aprovado**, busca o commit e o seleciona para
+   a atualização. Não avança livremente para um `main` mais recente sem CI.
+5. A stack é atualizada e seu estado é verificado. Ignore nenhum erro de SSH,
+   build ou verificação de saúde para apresentar a publicação como concluída.
+
+O acionamento manual também é restrito a `main` e precisa comprovar CI aprovado
+para o SHA escolhido. Ele não serve para contornar um teste pendente ou falho.
+Desativar a variável impede novos deploys; não desliga uma instância existente.
+
+## Rede e identidade do servidor
+
+- O runner precisa alcançar o serviço SSH no host e na **mesma porta** configurada
+  em `EC2_PORT`. Uma regra que permite apenas o IP do seu computador não permite
+  automaticamente o acesso do runner do GitHub.
+- Defina um caminho de rede autorizado para a automação, por exemplo um runner
+  com saída conhecida ou conexão privada já configurada. Não amplie o acesso
+  indiscriminadamente para contornar um timeout.
+- Mantenha a porta 8000 interna ao Compose; exponha 80/443 para o site e restrinja
+  SSH às origens administrativas e de automação autorizadas.
+- Se a host key mudar, confirme pela console antes de atualizar o pin. Uma
+  divergência deve falhar, sem desativar a verificação de identidade.
+
+## Diagnóstico e confirmação
+
+Na falha de `Prepare SSH` investigada em **20/10/2026**, `EC2_HOST` e
+`EC2_SSH_KEY` estavam vazios. Isso indicou configuração de deploy ausente;
+o CI/backend havia passado. O gate explícito permite deixar EC2 desativada
+enquanto o trabalho no código e no Android continua.
+
+Deploy **ignorado**, **tentativa falha** e **servidor atualizado e saudável**
+são resultados diferentes. Confira o resumo do workflow, o SHA no servidor,
+containers e endpoints. Validação local de YAML ou chave não comprova acesso ao
+servidor nem publica o aplicativo.
+
+## Operação e backup
+
+Dados e logs usam `siopa_data`/`siopa_logs`; certificados usam `caddy_data`.
+Preserve os volumes e faça backup antes de alterações relevantes. `.env`, chaves,
+modelos e dados privados não pertencem ao repositório. Uma conexão SSH funcional
+não substitui política de backup, controle de acesso e retenção.

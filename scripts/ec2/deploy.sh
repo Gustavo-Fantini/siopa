@@ -21,5 +21,5 @@ fi
 
 mkdir -p deploy
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build --remove-orphans
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build --remove-orphans --wait --wait-timeout 180
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
