@@ -44,11 +44,17 @@ resultados permanecem no IndexedDB; o fluxo principal não faz upload de imagens
 Não há servidor público fixo embutido no APK: a atualização usa endereço HTTPS
 configurado pelo usuário. Chaves pagas ficam no servidor, nunca no APK.
 
-O deploy EC2 é opcional e desativado sem a variável de repositório
-`ENABLE_EC2_DEPLOY=true`. Quando habilitado, exige CI aprovado para o SHA exato
-de `main`, secrets completos e host key SSH fixada. O push e o CI independem de
-EC2; nenhuma hospedagem é criada por esse controle. Operação e diagnóstico:
-[GITHUB_ACTIONS_SECRETS.md](GITHUB_ACTIONS_SECRETS.md).
+Em **20/10/2026**, o usuário informou que excluiu a instância EC2 e que ela não
+permanecerá ligada. A automação EC2 foi descontinuada: o workflow de deploy e
+seus auxiliares SSH não fazem parte do fluxo atual. `ENABLE_EC2_DEPLOY` e secrets
+`EC2_*` não são requisitos da automação mantida. Push, CI, geração do APK e análise
+offline continuam independentes de hospedagem; nenhum backend público é afirmado
+como ativo por esta documentação.
+
+`scripts/ec2/deploy.sh` e `deploy/bootstrap-ubuntu.sh` permanecem apenas como
+referências manuais genéricas, sem execução automática. Os antigos guias EC2
+registram a descontinuação; procedimentos anteriores estão no histórico Git.
+Execução/publicação futura: [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Responsabilidades e contratos
 
@@ -165,8 +171,8 @@ registros no servidor. `app.db`, imagens, modelos e `.env` existentes foram pres
 - `Dockerfile` usa healthcheck da porta configurada; Compose fixa porta interna 8000.
   Estatísticas públicas são do processo atual e não inventam precisão histórica.
 
-Guias: [MOBILE_OFFLINE.md](MOBILE_OFFLINE.md), [API_DOCUMENTATION.md](API_DOCUMENTATION.md),
-[DEPLOYMENT.md](DEPLOYMENT.md), [DEPLOYMENT_EC2.md](DEPLOYMENT_EC2.md).
+Guias: [MOBILE_OFFLINE.md](MOBILE_OFFLINE.md), [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+e [DEPLOYMENT.md](DEPLOYMENT.md).
 
 Ainda será necessário validar a contagem com fotos reais de celulares, papel e
 protocolo confirmados, calibrar perfis com avaliação agronômica e testar aparelhos

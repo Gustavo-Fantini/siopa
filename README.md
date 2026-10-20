@@ -75,8 +75,11 @@ O dataset/anotador/treinamento é interno: habilite `ENABLE_DATASET_API=True`, d
 `SIOPA_ADMIN_API_KEY` ou `--api-key`. Somente imagens revisadas treinam. O classificador
 de pesquisa não altera automaticamente o algoritmo embarcado.
 
-Docker/EC2/Render continuam disponíveis. Ajuste HTTPS, hosts, CORS e persistência.
-Para o APK, permita CORS da origem `https://appassets.androidplatform.net`.
+A EC2 foi excluída pelo usuário e sua automação de deploy foi descontinuada.
+Push, CI, geração do APK e análise offline continuam independentes de hospedagem.
+Docker e a configuração Render permanecem como opções para uma futura publicação
+do backend; veja [execução e publicação](docs/DEPLOYMENT.md). Para o APK acessar
+um servidor configurado, permita CORS da origem `https://appassets.androidplatform.net`.
 
 ## Método, evidências e continuidade
 
@@ -91,4 +94,4 @@ não são deduzidos da cobertura de um cartão.
 - [API](docs/API_DOCUMENTATION.md)
 - [Contexto técnico para próximas sessões](docs/PROJECT_CONTEXT.md)
 - [Índice de funções e rotas](docs/FUNCTION_INDEX.md)
-- [Deploy](docs/DEPLOYMENT.md), [EC2](docs/DEPLOYMENT_EC2.md) e [operação](docs/EC2_RUNBOOK.md)
+- [Execução e publicação do backend](docs/DEPLOYMENT.md)

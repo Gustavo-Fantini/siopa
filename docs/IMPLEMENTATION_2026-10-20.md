@@ -81,7 +81,7 @@ Próxima evidência necessária: papel confirmado, fotos reais de diferentes apa
 e contagem humana independente, seguindo [VALIDATION_PROTOCOL.md](VALIDATION_PROTOCOL.md).
 Ferramenta de comparação: `scripts/evaluate_counts.py`.
 
-## Correção posterior do workflow EC2
+## Correção posterior do workflow EC2 (histórico)
 
 O commit da implementação foi publicado e passou no CI. A execução EC2
 `39505016822` falhou em `Prepare SSH` porque `EC2_HOST` e `EC2_SSH_KEY` estavam
@@ -93,3 +93,11 @@ o estado saudável. Detalhes em [GITHUB_ACTIONS_SECRETS.md](GITHUB_ACTIONS_SECRE
 Verificação local dessa correção: **91 testes passaram**, incluindo 14 cenários
 de política e preparação SSH sem rede, além de actionlint e `bash -n` nos três
 scripts. Nenhuma conexão SSH a EC2 ou publicação em servidor foi realizada.
+
+## Descontinuação da EC2
+
+Depois dessa correção, o usuário informou que excluiu a instância EC2 e não vai
+mantê-la ligada. Foram removidos o workflow EC2, os dois scripts de SSH exclusivos
+da automação e seus 14 testes. O CI e o build Android continuam disponíveis; os
+77 testes da aplicação permanecem. Os guias atuais registram a descontinuação,
+e os detalhes da configuração anterior permanecem no histórico do Git.

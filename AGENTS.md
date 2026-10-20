@@ -9,6 +9,10 @@ catálogo no aparelho e sincronização opcional de contexto por GPS/rede. Papel
 hidrossensível amarelo que marca azul; dimensões editáveis, incluindo 76 × 26 e
 76 × 25 mm. Marca/modelo não definidos; não presumir fator de espalhamento.
 
+Hospedagem: o usuário informou em 20/10/2026 que excluiu a instância EC2 e não
+vai mantê-la ligada. A automação EC2 foi removida. Não reintroduza esse deploy
+nem presuma servidor ativo; o desenvolvimento Android/offline segue independente.
+
 ## Retomada de contexto
 
 - Leia [docs/PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md) para conhecer arquitetura,
