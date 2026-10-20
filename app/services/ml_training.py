@@ -12,8 +12,9 @@ from typing import Dict, List, Tuple, Optional
 from datetime import datetime
 import joblib
 import pickle
+import hashlib
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sqlalchemy.orm import Session
 import threading
@@ -25,7 +26,33 @@ from app.models.database import (
     get_training_ready_images
 )
 from app.core.config import settings
+from app.services.vision_features import FEATURE_NAMES, extract_patch_features
 from loguru import logger
+
+CLASS_LABELS = {
+    0: "background",
+    1: "droplet_small",
+    2: "droplet_medium",
+    3: "droplet_large",
+    4: "droplet_duplicate",
+    5: "dirt",
+}
+LABEL_BY_CLASS = {value: key for key, value in CLASS_LABELS.items()}
+
+
+def split_by_source_image(X, y, groups, holdout_fraction=0.2):
+    """Keep every patch and byte-identical source image in exactly one partition."""
+    groups = np.asarray(groups)
+    if len(groups) != len(X) or len(set(groups)) < 2:
+        raise ValueError("São necessárias ao menos duas imagens distintas para um holdout independente.")
+    if not 0 < holdout_fraction < 1:
+        raise ValueError("A fração de avaliação deve estar entre 0 e 1.")
+    train_indices, test_indices = next(GroupShuffleSplit(
+        n_splits=1, test_size=holdout_fraction, random_state=42,
+    ).split(X, y, groups))
+    if len(np.unique(y[train_indices])) < 2:
+        raise ValueError("A divisão por imagem deixou menos de duas classes no treino; amplie o dataset revisado.")
+    return train_indices, test_indices
 
 class MLTrainer:
     """
@@ -110,16 +137,34 @@ class MLTrainer:
                 if len(X) == 0:
                     raise ValueError("Não foi possível extrair amostras das anotações (features vazias)")
                 
-                # Estatísticas de distribuição de classes
+                # Estatisticas de distribuicao de classes
                 unique, counts = np.unique(y, return_counts=True)
                 class_dist = {int(cls): int(cnt) for cls, cnt in zip(unique, counts)}
                 metadata["class_distribution"] = class_dist
-                logger.info(f"Distribuição de classes (0=não-gota, 1=gota): {class_dist}")
+                readable_dist = {
+                    CLASS_LABELS.get(int(cls), str(cls)): int(cnt)
+                    for cls, cnt in zip(unique, counts)
+                }
+                metadata["class_distribution_readable"] = readable_dist
+                logger.info(f"Distribuicao de classes: {readable_dist}")
 
-                # Divide dataset
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=0.2, random_state=42, stratify=y
-                )
+                if len(class_dist) < 2:
+                    raise ValueError("Treinamento precisa de ao menos 2 classes: anotacoes positivas e fundo/sujeira")
+
+                split_config = session.dataset_split_config or {}
+                train_share = float(split_config.get("train", 0.8))
+                validation_share = float(split_config.get("validation", 0.1))
+                test_share = float(split_config.get("test", 0.1))
+                shares = (train_share, validation_share, test_share)
+                if any(not np.isfinite(value) or value < 0 for value in shares) or min(train_share, validation_share + test_share) <= 0:
+                    raise ValueError("Informe frações finitas e positivas para treino e avaliação.")
+                holdout = (validation_share + test_share) / sum(shares)
+                train_indices, test_indices = split_by_source_image(X, y, metadata["sample_groups"], holdout)
+                X_train, X_test, y_train, y_test = X[train_indices], X[test_indices], y[train_indices], y[test_indices]
+                metadata["evaluation_scope"] = "grouped_source_image_holdout; validation_and_test_combined"
+                metadata["train_source_hashes"] = sorted(set(metadata["sample_groups"][i] for i in train_indices))
+                metadata["holdout_source_hashes"] = sorted(set(metadata["sample_groups"][i] for i in test_indices))
+                self._update_training_progress(session_id, 25)
                 
                 logger.info(f"Dataset: {len(X_train)} treino, {len(X_test)} teste")
                 
@@ -139,6 +184,7 @@ class MLTrainer:
                 metrics = self._evaluate_model(model, X_test, y_test)
                 
                 # Salva modelo
+                self._attach_model_metadata(model, metadata)
                 model_path = self._save_model(model, session_id, architecture)
                 
                 # Atualiza banco de dados
@@ -154,161 +200,160 @@ class MLTrainer:
     
     def _prepare_training_data(self, db: Session) -> Tuple[np.ndarray, np.ndarray, Dict]:
         """
-        Prepara dados de treinamento a partir das anotações
-        """
-        # Busca imagens anotadas e validadas
-        images = get_training_ready_images(db)
+        Prepara dados de treinamento multiclasses a partir das anotacoes.
 
-        features = []
-        labels = []
+        Classes:
+        0 background, 1 gota pequena, 2 gota media, 3 gota grande,
+        4 gota dupla/mesclada, 5 sujeira/artefato.
+        """
+        images = get_training_ready_images(db)
+        rng = np.random.default_rng(42)
+
+        features: List[np.ndarray] = []
+        labels: List[int] = []
         metadata = {
-            "total_images": len(images),
+            "total_images": 0,
             "total_annotations": 0,
-            "feature_names": [
-                "intensity_mean", "intensity_std", "laplacian_var",
-                "sobel_x_mean", "sobel_y_mean", "area_pixels",
-                "aspect_ratio", "solidity", "perimeter",
-                "circularity", "bbox_fill_ratio"
-            ]
+            "negative_samples": 0,
+            "feature_names": FEATURE_NAMES,
+            "class_labels": CLASS_LABELS,
+            "training_mode": "multiclass_patch_classifier",
+            "sample_groups": [],
         }
 
         for image in images:
-            # Carrega imagem
             img_path = Path(image.file_path)
             if not img_path.exists():
                 continue
-                
-            img = cv2.imread(str(img_path))
+
+            img = cv2.imread(str(img_path), cv2.IMREAD_COLOR)
             if img is None:
                 continue
-                
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            
-            # Extrai features positivas (gotículas anotadas)
-            for annotation in image.annotations:
-                    
-                # Extrai patch ao redor da gotícula
-                x, y, r = int(annotation.x), int(annotation.y), int(annotation.radius)
-                
-                # Garante que o patch está dentro da imagem
-                x1, y1 = max(0, x - r - 5), max(0, y - r - 5)
-                x2, y2 = min(gray.shape[1], x + r + 5), min(gray.shape[0], y + r + 5)
-                
-                if x2 - x1 < 10 or y2 - y1 < 10:
+
+            source_hash = hashlib.sha256(img_path.read_bytes()).hexdigest()
+
+            height, width = img.shape[:2]
+            annotations = [annotation for annotation in image.annotations or [] if annotation.review_status == "approved"]
+            valid_annotations = []
+
+            for annotation in annotations:
+                patch = self._extract_annotation_patch(img, annotation)
+                feature_vector = extract_patch_features(patch) if patch is not None else None
+                if feature_vector is None:
                     continue
-                    
-                patch = gray[y1:y2, x1:x2]
-                
-                # Extrai características
-                feature_vector = self._extract_patch_features(patch)
-                if feature_vector is not None:
-                    features.append(feature_vector)
-                    labels.append(1)  # Gotícula positiva
-                    metadata["total_annotations"] += 1
-            
-            # Extrai features negativas (patches aleatórios sem gotículas)
-            num_negatives = len(image.annotations)
-            for _ in range(num_negatives):
-                # Posição aleatória
-                x = np.random.randint(20, gray.shape[1] - 20)
-                y = np.random.randint(20, gray.shape[0] - 20)
-                
-                # Verifica se não está próximo de nenhuma gotícula
-                is_near_droplet = False
-                for ann in image.annotations:
-                    distance = np.sqrt((ann.x - x)**2 + (ann.y - y)**2)
-                    if distance < ann.radius + 10:
-                        is_near_droplet = True
-                        break
-                
-                if not is_near_droplet:
-                    patch = gray[y-10:y+10, x-10:x+10]
-                    if patch.shape == (20, 20):
-                        feature_vector = self._extract_patch_features(patch)
-                        if feature_vector is not None:
-                            features.append(feature_vector)
-                            labels.append(0)  # Não-gotícula
-        
-        return np.array(features), np.array(labels), metadata
-    
-    def _extract_patch_features(self, patch: np.ndarray) -> Optional[np.ndarray]:
-        """Extrai características de um patch de imagem para o Random Forest."""
+
+                label = self._annotation_to_label(annotation)
+                features.append(feature_vector)
+                labels.append(label)
+                metadata["sample_groups"].append(source_hash)
+                valid_annotations.append(annotation)
+                metadata["total_annotations"] += 1
+
+            if valid_annotations:
+                metadata["total_images"] += 1
+
+            negative_target = max(len(valid_annotations), 3 if valid_annotations else 0)
+            if width < 24 or height < 24 or negative_target <= 0:
+                continue
+
+            negative_count = 0
+            attempts = 0
+            patch_radius = max(8, min(18, int(min(width, height) * 0.03)))
+            max_attempts = max(negative_target * 12, 30)
+
+            while negative_count < negative_target and attempts < max_attempts:
+                attempts += 1
+                x = int(rng.integers(patch_radius, max(patch_radius + 1, width - patch_radius)))
+                y = int(rng.integers(patch_radius, max(patch_radius + 1, height - patch_radius)))
+                if self._is_near_annotation(x, y, annotations, patch_radius):
+                    continue
+
+                patch = img[y - patch_radius:y + patch_radius, x - patch_radius:x + patch_radius]
+                feature_vector = extract_patch_features(patch)
+                if feature_vector is None:
+                    continue
+
+                features.append(feature_vector)
+                labels.append(0)
+                metadata["sample_groups"].append(source_hash)
+                negative_count += 1
+                metadata["negative_samples"] += 1
+
+        if not features:
+            return np.empty((0, len(FEATURE_NAMES)), dtype=np.float32), np.empty((0,), dtype=np.int64), metadata
+
+        return np.asarray(features, dtype=np.float32), np.asarray(labels, dtype=np.int64), metadata
+
+    def _extract_annotation_patch(self, image_bgr: np.ndarray, annotation: ImageAnnotation) -> Optional[np.ndarray]:
+        """Return a context patch around one manual annotation."""
         try:
-            if patch.size == 0:
+            height, width = image_bgr.shape[:2]
+            x = int(round(annotation.x))
+            y = int(round(annotation.y))
+            radius = max(2, int(round(annotation.radius or 2)))
+            padding = max(6, int(round(radius * 0.7)))
+
+            x1 = max(0, x - radius - padding)
+            y1 = max(0, y - radius - padding)
+            x2 = min(width, x + radius + padding)
+            y2 = min(height, y + radius + padding)
+            if x2 - x1 < 8 or y2 - y1 < 8:
                 return None
-
-            # Características básicas de intensidade
-            intensity_mean = np.mean(patch)
-            intensity_std = np.std(patch)
-
-            # Características de textura
-            laplacian = cv2.Laplacian(patch, cv2.CV_64F)
-            laplacian_var = np.var(laplacian)
-
-            # Gradientes
-            sobel_x = cv2.Sobel(patch, cv2.CV_64F, 1, 0, ksize=3)
-            sobel_y = cv2.Sobel(patch, cv2.CV_64F, 0, 1, ksize=3)
-            sobel_x_mean = np.mean(np.abs(sobel_x))
-            sobel_y_mean = np.mean(np.abs(sobel_y))
-
-            # Características morfológicas
-            _, binary = cv2.threshold(patch, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-            if contours:
-                # Maior contorno
-                largest_contour = max(contours, key=cv2.contourArea)
-                area = cv2.contourArea(largest_contour)
-
-                if area > 0:
-                    # Bounding box mínima
-                    rect = cv2.minAreaRect(largest_contour)
-                    width, height = rect[1]
-                    aspect_ratio = max(width, height) / max(min(width, height), 1)
-
-                    # Solidez (área / área do hull convexo)
-                    hull = cv2.convexHull(largest_contour)
-                    hull_area = cv2.contourArea(hull)
-                    solidity = area / max(hull_area, 1)
-
-                    # Perímetro e circularidade
-                    perimeter = cv2.arcLength(largest_contour, True)
-                    if perimeter > 0:
-                        circularity = 4 * np.pi * area / (perimeter ** 2)
-                    else:
-                        circularity = 0.0
-
-                    # Relação área / bounding box (preenchimento)
-                    bbox_w = max(width, 1)
-                    bbox_h = max(height, 1)
-                    bbox_area = bbox_w * bbox_h
-                    bbox_fill_ratio = area / bbox_area if bbox_area > 0 else 0.0
-                else:
-                    area = 0
-                    aspect_ratio = 1
-                    solidity = 0
-                    perimeter = 0
-                    circularity = 0.0
-                    bbox_fill_ratio = 0.0
-            else:
-                area = 0
-                aspect_ratio = 1
-                solidity = 0
-                perimeter = 0
-                circularity = 0.0
-                bbox_fill_ratio = 0.0
-
-            return np.array([
-                intensity_mean, intensity_std, laplacian_var,
-                sobel_x_mean, sobel_y_mean, area,
-                aspect_ratio, solidity, perimeter,
-                circularity, bbox_fill_ratio,
-            ])
-
-        except Exception as e:
-            logger.warning(f"Erro ao extrair features: {e}")
+            return image_bgr[y1:y2, x1:x2]
+        except Exception:
             return None
-    
+
+    def _annotation_to_label(self, annotation: ImageAnnotation) -> int:
+        """Map persisted annotation metadata to a stable ML class id."""
+        annotation_type = str(annotation.annotation_type or "droplet").lower().strip()
+        size_class = str(annotation.droplet_size_class or "").lower().strip()
+
+        if annotation_type in {"dirt", "sujeira", "artifact", "artefato"}:
+            return LABEL_BY_CLASS["dirt"]
+        if annotation_type in {"droplet_duplicate", "duplicate", "dupla", "merged"} or annotation.is_overlapping:
+            return LABEL_BY_CLASS["droplet_duplicate"]
+        if annotation_type in {"droplet_small", "small"}:
+            return LABEL_BY_CLASS["droplet_small"]
+        if annotation_type in {"droplet_large", "large"}:
+            return LABEL_BY_CLASS["droplet_large"]
+        if annotation_type in {"droplet_medium", "medium"}:
+            return LABEL_BY_CLASS["droplet_medium"]
+
+        if size_class in {"small", "pequena", "pequeno"}:
+            return LABEL_BY_CLASS["droplet_small"]
+        if size_class in {"large", "grande"}:
+            return LABEL_BY_CLASS["droplet_large"]
+        if size_class in {"medium", "media", "medio"}:
+            return LABEL_BY_CLASS["droplet_medium"]
+
+        if annotation.diameter_mm is not None:
+            diameter_mm = float(annotation.diameter_mm)
+            if diameter_mm <= 0.5:
+                return LABEL_BY_CLASS["droplet_small"]
+            if diameter_mm <= 1.2:
+                return LABEL_BY_CLASS["droplet_medium"]
+            return LABEL_BY_CLASS["droplet_large"]
+
+        radius = float(annotation.radius or 0)
+        if radius <= 6:
+            return LABEL_BY_CLASS["droplet_small"]
+        if radius <= 12:
+            return LABEL_BY_CLASS["droplet_medium"]
+        return LABEL_BY_CLASS["droplet_large"]
+
+    @staticmethod
+    def _is_near_annotation(x: int, y: int, annotations: List[ImageAnnotation], patch_radius: int) -> bool:
+        """Avoid sampling random negatives over known manual annotations."""
+        for annotation in annotations:
+            distance = float(np.hypot(float(annotation.x) - x, float(annotation.y) - y))
+            if distance <= float(annotation.radius or 0) + patch_radius + 4:
+                return True
+        return False
+
+    def _extract_patch_features(self, patch: np.ndarray) -> Optional[np.ndarray]:
+        """Compatibility wrapper around shared feature extraction."""
+        return extract_patch_features(patch)
+
     def _train_random_forest(
         self,
         X_train: np.ndarray,
@@ -338,13 +383,8 @@ class MLTrainer:
             n_jobs=-1,
         )
 
-        # Simula progresso de treinamento
-        for i in range(10):
-            time.sleep(0.5)
-            progress = (i + 1) * 10
-            self._update_training_progress(session_id, progress)
-
         model.fit(X_train, y_train)
+        self._update_training_progress(session_id, 85)
 
         # Loga métricas internas do modelo
         try:
@@ -387,41 +427,55 @@ class MLTrainer:
             random_state=42
         )
         
-        # Simula progresso
-        for i in range(10):
-            time.sleep(0.3)
-            progress = (i + 1) * 10
-            self._update_training_progress(session_id, progress)
-        
         model.fit(X_train_scaled, y_train)
+        self._update_training_progress(session_id, 85)
         
         # Retorna modelo e scaler juntos
         return {"model": model, "scaler": scaler}
     
     def _evaluate_model(self, model, X_test: np.ndarray, y_test: np.ndarray) -> Dict:
         """
-        Avalia performance do modelo
+        Avalia performance do modelo.
         """
-        # Faz predições
-        if isinstance(model, dict):  # SVM com scaler
+        if isinstance(model, dict):
             X_test_scaled = model["scaler"].transform(X_test)
             y_pred = model["model"].predict(X_test_scaled)
-            y_prob = model["model"].predict_proba(X_test_scaled)[:, 1]
-        else:  # Random Forest
+        else:
             y_pred = model.predict(X_test)
-            y_prob = model.predict_proba(X_test)[:, 1]
-        
-        # Calcula métricas
+
         metrics = {
             "accuracy": accuracy_score(y_test, y_pred),
-            "precision": precision_score(y_test, y_pred, zero_division=0),
-            "recall": recall_score(y_test, y_pred, zero_division=0),
-            "f1_score": f1_score(y_test, y_pred, zero_division=0)
+            "precision": precision_score(y_test, y_pred, average="weighted", zero_division=0),
+            "recall": recall_score(y_test, y_pred, average="weighted", zero_division=0),
+            "f1_score": f1_score(y_test, y_pred, average="weighted", zero_division=0),
         }
-        
-        logger.info(f"Métricas do modelo: {metrics}")
+
+        logger.info(f"Metricas do modelo: {metrics}")
         return metrics
-    
+
+    def _attach_model_metadata(self, model, metadata: Dict):
+        """Persist class/feature metadata together with the sklearn artifact."""
+        payload = {
+            "feature_names": metadata.get("feature_names", FEATURE_NAMES),
+            "class_labels": metadata.get("class_labels", CLASS_LABELS),
+            "class_distribution": metadata.get("class_distribution", {}),
+            "class_distribution_readable": metadata.get("class_distribution_readable", {}),
+            "training_mode": metadata.get("training_mode", "multiclass_patch_classifier"),
+        }
+
+        if isinstance(model, dict):
+            model["metadata"] = payload
+            estimator = model.get("model")
+        else:
+            estimator = model
+
+        try:
+            setattr(estimator, "siopa_metadata", payload)
+            setattr(estimator, "siopa_feature_names", payload["feature_names"])
+            setattr(estimator, "siopa_class_labels", payload["class_labels"])
+        except Exception:
+            logger.debug("Nao foi possivel anexar metadados diretamente ao estimador")
+
     def _save_model(self, model, session_id: int, architecture: str) -> str:
         """
         Salva modelo treinado
@@ -496,23 +550,16 @@ class MLTrainer:
                 model.f1_score = metrics["f1_score"]
                 model.model_path = model_path
                 model.training_dataset_size = metadata["total_images"]
-                model.is_production_ready = metrics["accuracy"] > 0.8
-                
-                # Se é o melhor modelo, torna ativo
-                if metrics["accuracy"] > 0.85:
-                    # Desativa outros modelos do mesmo tipo
-                    db.query(MLModel).filter(
-                        MLModel.model_type == model.model_type,
-                        MLModel.id != model.id
-                    ).update({"is_active": False})
-                    
-                    model.is_active = True
+                # A patch holdout does not validate the physical analysis pipeline.
+                # Activation must follow an explicit, independent field evaluation.
+                model.is_production_ready = False
             
             db.commit()
             logger.info("Resultados do treinamento salvos")
             
         except Exception as e:
             logger.error(f"Erro ao salvar resultados: {e}")
+            raise
     
     def _mark_training_failed(self, session_id: int, error_message: str):
         """
@@ -579,6 +626,15 @@ class MLTrainer:
                     return None
                 
                 loaded_model = joblib.load(model_path)
+                artifact_metadata = {}
+                if isinstance(loaded_model, dict):
+                    artifact_metadata = loaded_model.get("metadata", {}) or {}
+                    estimator = loaded_model.get("model")
+                else:
+                    estimator = loaded_model
+
+                if not artifact_metadata and estimator is not None:
+                    artifact_metadata = getattr(estimator, "siopa_metadata", {}) or {}
                 
                 logger.info(f"Modelo {model.name} carregado com sucesso")
                 return {
@@ -587,7 +643,8 @@ class MLTrainer:
                         "name": model.name,
                         "version": model.version,
                         "architecture": model.architecture,
-                        "accuracy": model.accuracy
+                        "accuracy": model.accuracy,
+                        **artifact_metadata,
                     }
                 }
                 
@@ -616,7 +673,8 @@ def start_training(
                 session_name=session_name,
                 total_epochs=total_epochs,
                 dataset_split_config=kwargs.get('dataset_split_config', {}),
-                status="pending"
+                status="pending",
+                started_by=kwargs.get("started_by", "system"),
             )
             
             db.add(session)

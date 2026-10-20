@@ -1,304 +1,316 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0f766e">
-    <title>Anotação de Dataset | SIOPA</title>
-    <style>
-        :root { --bg:#f4f7fb; --card:#fff; --line:#d9e2ec; --text:#102a43; --muted:#52606d; --primary:#0f766e; --accent:#2563eb; --ok:#166534; --bad:#b91c1c; }
-        * { box-sizing:border-box; }
-        body { margin:0; font-family:"Segoe UI",sans-serif; color:var(--text); background:linear-gradient(180deg,#f8fbff 0,var(--bg) 100%); }
-        button,input,select,textarea { font:inherit; }
-        .shell { width:min(1280px,calc(100% - 20px)); margin:0 auto; padding:14px 0 28px; }
-        .hero,.toolbar,.viewer,.side,.card,.modal-card,.msg { background:var(--card); border:1px solid var(--line); border-radius:20px; box-shadow:0 14px 40px rgba(15,23,42,.08); }
-        .hero { padding:20px; background:linear-gradient(135deg,rgba(15,118,110,.96),rgba(37,99,235,.92)); color:#fff; }
-        .hero h1 { margin:8px 0 6px; font-size:clamp(1.8rem,4vw,2.8rem); }
-        .hero p { margin:0; color:rgba(255,255,255,.86); }
-        .toolbar { margin-top:16px; padding:14px; display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
-        .layout { display:grid; gap:16px; grid-template-columns:minmax(0,1.7fr) minmax(320px,.9fr); margin-top:16px; }
-        .viewer,.side { padding:16px; }
-        .btn { min-height:46px; padding:11px 14px; border-radius:14px; border:1px solid transparent; cursor:pointer; font-weight:700; display:inline-flex; justify-content:center; align-items:center; }
-        .primary { background:var(--primary); color:#fff; } .ghost { background:transparent; color:var(--primary); border-color:rgba(15,118,110,.18); } .danger { background:#fee2e2; color:var(--bad); border-color:rgba(185,28,28,.15); }
-        .toolbar .btn { width:100%; }
-        .heading { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
-        .heading h2,.card h3 { margin:0; }
-        .hint { color:var(--muted); font-size:.92rem; }
-        .canvas-wrap { width:100%; overflow:auto; border-radius:16px; border:1px solid var(--line); background:#fff; min-height:360px; display:flex; justify-content:center; align-items:flex-start; }
-        canvas { display:block; max-width:none; touch-action:none; }
-        .zoombar,.stats,.field,.images,.ann-list,.stack { display:grid; gap:10px; }
-        .zoombar { grid-template-columns:repeat(4,minmax(0,1fr)); margin-bottom:12px; }
-        .field label { font-weight:700; }
-        .field input,.field select,.field textarea { width:100%; min-height:44px; padding:10px 12px; border-radius:12px; border:1px solid var(--line); }
-        textarea { min-height:90px; resize:vertical; }
-        .card { padding:14px; }
-        .stats { grid-template-columns:repeat(3,minmax(0,1fr)); }
-        .stat { padding:12px; border-radius:14px; background:#f8fafc; }
-        .stat strong { display:block; font-size:1.1rem; margin-top:4px; }
-        .images,.ann-list { max-height:260px; overflow:auto; }
-        .row { padding:12px; border-radius:14px; background:#f8fafc; cursor:pointer; border:1px solid transparent; }
-        .row.active { border-color:rgba(37,99,235,.28); background:#eff6ff; }
-        .msg { display:none; margin-bottom:12px; padding:14px; }
-        .msg.success { display:block; background:#f0fdf4; color:var(--ok); border-color:rgba(22,101,52,.16); }
-        .msg.error { display:block; background:#fef2f2; color:var(--bad); border-color:rgba(185,28,28,.16); }
-        .modal { position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; align-items:center; justify-content:center; padding:16px; }
-        .modal.open { display:flex; }
-        .modal-card { width:min(520px,100%); padding:18px; }
-        @media (max-width:980px) { .layout { grid-template-columns:1fr; } .stats { grid-template-columns:1fr 1fr; } }
-        @media (max-width:640px) { .shell { width:min(100% - 12px,100%); } .stats,.zoombar { grid-template-columns:1fr 1fr; } .viewer,.side,.toolbar,.hero { border-radius:16px; } }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#174f36">
+  <title>Anotacoes de gotas | SIOPA</title>
+  <style>
+    :root{--bg:#f5efe2;--ink:#1f261f;--muted:#66705f;--card:#fffaf0;--line:#decfb5;--leaf:#174f36;--sun:#f2a23a;--small:#0ea5e9;--medium:#22c55e;--large:#f59e0b;--double:#ef4444;--dirt:#7c3f16}
+    *{box-sizing:border-box} body{margin:0;color:var(--ink);font-family:"Bahnschrift","Trebuchet MS",sans-serif;background:radial-gradient(circle at 8% -10%,#ffe2a0 0,transparent 30%),linear-gradient(135deg,#fbf6eb 0,#edf6ee 55%,#e7f0f4 100%)}
+    button,input,select,textarea{font:inherit}.shell{width:min(1420px,calc(100% - 18px));margin:auto;padding:12px 0 26px}
+    .hero{display:grid;gap:12px;grid-template-columns:minmax(0,1fr) auto;align-items:end;padding:18px;color:#fff;border-radius:26px;background:linear-gradient(135deg,#0b3d29,#176b45 55%,#c77719);box-shadow:0 18px 44px rgba(61,43,12,.18)}
+    .hero h1{margin:0;font-size:clamp(1.5rem,3vw,2.5rem);letter-spacing:-.03em}.hero p{margin:6px 0 0;color:rgba(255,255,255,.86);max-width:800px}.badge{padding:10px 14px;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:rgba(255,255,255,.12);white-space:nowrap}
+    .toolbar,.viewer,.panel,.card,.modal-card{background:rgba(255,250,240,.94);border:1px solid var(--line);border-radius:22px;box-shadow:0 14px 34px rgba(57,43,16,.10)}
+    .toolbar{margin-top:12px;padding:12px;display:grid;gap:10px;grid-template-columns:repeat(4,minmax(130px,1fr))}.workspace{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,.85fr);gap:14px;margin-top:14px}.viewer,.panel{padding:14px}.panel{display:grid;gap:12px;align-content:start}
+    .head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}h2,h3{margin:0;letter-spacing:-.02em}.hint{color:var(--muted);font-size:.9rem}
+    .btn{min-height:44px;border:1px solid transparent;border-radius:14px;padding:10px 13px;cursor:pointer;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px}.primary{background:var(--leaf);color:#fff}.accent{background:var(--sun);color:#2b1c05}.ghost{color:var(--leaf);border-color:#bbd3bf;background:#fafff7}.danger{color:#991b1b;border-color:#fecaca;background:#fff1f1}.btn.active{outline:3px solid rgba(242,162,58,.35);border-color:var(--sun)}.small{min-height:36px;padding:8px 10px;font-size:.9rem}
+    .field{display:grid;gap:6px}.field label{font-weight:800}.field input,.field textarea{width:100%;min-height:42px;border:1px solid var(--line);border-radius:13px;padding:9px 11px;background:#fffdf8;color:var(--ink)}textarea{min-height:82px;resize:vertical}
+    .canvas-shell{position:relative;overflow:auto;border:1px solid #d6c6a9;border-radius:18px;min-height:480px;max-height:72vh;background:linear-gradient(45deg,#f9f0db 25%,#fff8eb 25%,#fff8eb 50%,#f9f0db 50%,#f9f0db 75%,#fff8eb 75%);background-size:28px 28px}canvas{display:block;max-width:none;touch-action:none}
+    .tool-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.tool-grid .btn{justify-content:flex-start}.dot{width:12px;height:12px;border-radius:999px;background:currentColor;box-shadow:0 0 0 3px rgba(255,255,255,.7)}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);border-radius:999px;padding:7px 10px;background:#fffdf8;color:var(--muted);font-size:.88rem}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.stat{padding:11px;border-radius:16px;border:1px solid #eadcc4;background:#fffdf8}.stat strong{display:block;margin-top:3px;font-size:1.15rem}
+    .list{display:grid;gap:8px;max-height:280px;overflow:auto}.row{padding:10px;border:1px solid transparent;border-radius:14px;background:#fffdf8;cursor:pointer}.row.active{border-color:#e2a435;background:#fff3d8}
+    .msg{display:none;margin:0 0 12px;padding:12px;border-radius:14px;border:1px solid}.msg.success{display:block;color:#14532d;background:#f0fdf4;border-color:#bbf7d0}.msg.error{display:block;color:#991b1b;background:#fff1f1;border-color:#fecaca}.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid var(--line);border-radius:14px;background:#fffdf8}.toggle input{width:22px;height:22px}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(24,30,24,.46);z-index:20}.modal.open{display:flex}.modal-card{width:min(560px,100%);padding:16px}
+    @media(max-width:1040px){.workspace{grid-template-columns:1fr}.canvas-shell{max-height:none}}@media(max-width:700px){.shell{width:min(100% - 10px,100%)}.hero{grid-template-columns:1fr;border-radius:18px}.toolbar{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}.tool-grid{grid-template-columns:1fr}.viewer,.panel,.toolbar{border-radius:18px}}
+  </style>
 </head>
 <body>
-    <main class="shell">
-        <section class="hero">
-            <span class="hint" style="color:rgba(255,255,255,.78)">Dataset + treinamento</span>
-            <h1>Anotação otimizada para web mobile</h1>
-            <p>Selecione a imagem, toque para marcar gotículas e salve tudo direto no servidor.</p>
+  <main class="shell">
+    <section class="hero">
+      <div><h1>Anotacao pixel a pixel das gotas</h1><p>Marque gotas pequenas, medias, grandes, duplicadas e sujeira. O ajuste automatico usa a cor do papel amarelo/laranja para estimar o raio.</p></div>
+      <span class="badge" id="zoomLabel">Zoom 100%</span>
+    </section>
+    <section class="toolbar" aria-label="Acesso privado ao dataset">
+      <div class="field"><label for="adminApiKey">Chave privada do dataset</label><input id="adminApiKey" type="password" autocomplete="off" placeholder="X-API-Key, somente nesta aba"></div>
+      <button class="btn primary" id="connectBtn" type="button">Conectar</button>
+      <button class="btn ghost" id="disconnectBtn" type="button" disabled>Desconectar</button>
+      <div class="hint" id="connectionStatus" role="status" aria-live="polite">Desconectado. As ferramentas precisam estar habilitadas no servidor.</div>
+    </section>
+    <section class="toolbar">
+      <button class="btn primary" id="reloadImagesBtn" type="button">Atualizar imagens</button>
+      <button class="btn ghost" id="openUploadBtn" type="button">Upload</button>
+      <button class="btn accent" id="saveBtn" type="button">Salvar anotacoes</button>
+      <button class="btn ghost" id="exportBtn" type="button">Exportar COCO</button>
+    </section>
+    <div class="workspace">
+      <section class="viewer">
+        <div class="head"><div><h2>Imagem de treinamento</h2><div class="hint" id="imageInfo">Nenhuma imagem selecionada</div></div><div class="chips"><span class="chip">Fundo amarelo/laranja</span><span class="chip" id="pointHint">Toque para marcar</span></div></div>
+        <div id="messageBox" class="msg"></div>
+        <div class="chips" style="margin-bottom:10px"><button class="btn small ghost" id="zoomOutBtn" type="button">Zoom -</button><button class="btn small ghost" id="zoomResetBtn" type="button">100%</button><button class="btn small ghost" id="zoomInBtn" type="button">Zoom +</button><button class="btn small danger" id="clearBtn" type="button">Limpar</button></div>
+        <div class="canvas-shell" id="canvasWrap"><canvas id="annotationCanvas"></canvas></div>
+        <canvas id="sourceCanvas" style="display:none"></canvas>
+      </section>
+      <aside class="panel">
+        <section class="card" style="padding:12px">
+          <div class="head"><h3>Ferramentas</h3><span class="hint" id="activeToolLabel">Gota media</span></div>
+          <div class="tool-grid" id="toolGrid">
+            <button class="btn ghost" data-tool="droplet_small" type="button" style="color:var(--small)"><span class="dot"></span>Gota pequena</button>
+            <button class="btn ghost active" data-tool="droplet_medium" type="button" style="color:var(--medium)"><span class="dot"></span>Gota media</button>
+            <button class="btn ghost" data-tool="droplet_large" type="button" style="color:var(--large)"><span class="dot"></span>Gota grande</button>
+            <button class="btn ghost" data-tool="droplet_duplicate" type="button" style="color:var(--double)"><span class="dot"></span>Gota duplicada</button>
+            <button class="btn ghost" data-tool="dirt" type="button" style="color:var(--dirt)"><span class="dot"></span>Pintar sujeira</button>
+            <button class="btn ghost" data-tool="select" type="button">Selecionar</button>
+            <button class="btn ghost" data-tool="delete" type="button">Excluir</button>
+            <button class="btn ghost" data-tool="pan" type="button">Mover imagem</button>
+          </div>
+          <div class="toggle" style="margin-top:10px"><span><strong>Ajuste automatico</strong><br><span class="hint">Cor do papel define o raio</span></span><input id="autoAdjust" type="checkbox" checked></div>
         </section>
-
-        <section class="toolbar">
-            <button class="btn primary" type="button" id="reloadImagesBtn">Atualizar imagens</button>
-            <button class="btn ghost" type="button" id="openUploadBtn">Upload nova imagem</button>
-            <button class="btn primary" type="button" id="saveBtn">Salvar anotações</button>
-            <button class="btn ghost" type="button" id="exportBtn">Exportar COCO</button>
+        <section class="card" style="padding:12px">
+          <div class="head"><h3>Padroes</h3></div>
+          <div class="field"><label for="presetRadius">Raio base (px)</label><input id="presetRadius" type="number" min="1" max="80" value="8"></div>
+          <div class="field"><label for="brushRadius">Pincel sujeira (px)</label><input id="brushRadius" type="number" min="3" max="90" value="16"></div>
+          <div class="field"><label for="confidenceValue">Confianca</label><input id="confidenceValue" type="number" min="0" max="1" step="0.05" value="1"></div>
+          <div class="field"><label for="pixelScale">Escala (mm/pixel)</label><input id="pixelScale" type="number" min="0.000001" step="any" placeholder="Confirme mm por pixel"></div>
+          <div class="field"><label for="annotatorName">Anotador</label><input id="annotatorName" type="text" value="Gustavo Fantini"></div>
         </section>
-
-        <div class="layout">
-            <section class="viewer">
-                <div class="heading">
-                    <div><h2>Canvas de anotação</h2><div class="hint" id="imageInfo">Nenhuma imagem selecionada</div></div>
-                    <div class="hint" id="zoomLabel">100%</div>
-                </div>
-                <div id="messageBox" class="msg"></div>
-                <div class="zoombar">
-                    <button class="btn ghost" type="button" id="zoomOutBtn">Zoom -</button>
-                    <button class="btn ghost" type="button" id="zoomResetBtn">100%</button>
-                    <button class="btn ghost" type="button" id="zoomInBtn">Zoom +</button>
-                    <button class="btn danger" type="button" id="clearBtn">Limpar</button>
-                </div>
-                <div class="canvas-wrap" id="canvasWrap">
-                    <canvas id="annotationCanvas"></canvas>
-                </div>
-            </section>
-
-            <aside class="side stack">
-                <section class="card">
-                    <div class="heading"><h3>Status do dataset</h3></div>
-                    <div class="stats">
-                        <div class="stat"><span class="hint">Total</span><strong id="totalImages">0</strong></div>
-                        <div class="stat"><span class="hint">Anotadas</span><strong id="annotatedImages">0</strong></div>
-                        <div class="stat"><span class="hint">Progresso</span><strong id="progressText">0%</strong></div>
-                    </div>
-                </section>
-
-                <section class="card">
-                    <div class="heading"><h3>Ferramentas</h3></div>
-                    <div class="field"><label for="annotationMode">Modo</label><select id="annotationMode"><option value="add">Adicionar</option><option value="select">Selecionar</option><option value="delete">Excluir</option></select></div>
-                    <div class="field"><label for="defaultRadius">Raio padrão (px)</label><input id="defaultRadius" type="number" min="1" max="50" value="5"></div>
-                    <div class="field"><label for="confidenceValue">Confiança</label><input id="confidenceValue" type="number" min="0.1" max="1" step="0.1" value="1"></div>
-                    <div class="field"><label for="annotatorName">Anotador</label><input id="annotatorName" type="text" value="Gustavo Fantini"></div>
-                    <div class="field"><label for="pixelScale">Escala (mm/pixel)</label><input id="pixelScale" type="number" min="0.01" step="0.01" value="0.1"></div>
-                </section>
-
-                <section class="card">
-                    <div class="heading"><h3>Imagens</h3><span class="hint" id="selectedImageCount">0 itens</span></div>
-                    <div class="images" id="imageList"></div>
-                </section>
-
-                <section class="card">
-                    <div class="heading"><h3>Anotações atuais</h3><span class="hint" id="annotationCount">0 gotículas</span></div>
-                    <div class="ann-list" id="annotationList"></div>
-                    <div class="hint" id="densityText" style="margin-top:10px">Densidade estimada: 0/cm²</div>
-                </section>
-            </aside>
-        </div>
-    </main>
-
-    <div class="modal" id="uploadModal">
-        <div class="modal-card">
-            <div class="heading"><h3>Upload de imagem</h3><button class="btn ghost" type="button" id="closeUploadBtn">Fechar</button></div>
-            <div class="field"><label for="uploadFile">Arquivo</label><input id="uploadFile" type="file" accept="image/*"></div>
-            <div class="field"><label for="originalFilename">Nome original</label><input id="originalFilename" type="text" placeholder="Nome do arquivo"></div>
-            <div class="field"><label for="uploadNotes">Notas</label><textarea id="uploadNotes" placeholder="Informações sobre a captura"></textarea></div>
-            <div class="toolbar" style="margin-top:14px"><button class="btn primary" type="button" id="confirmUploadBtn">Enviar</button></div>
-        </div>
+        <section class="card" style="padding:12px">
+          <div class="head"><h3>Dataset</h3><span class="hint" id="selectedImageCount">0 itens</span></div>
+          <div class="stats"><div class="stat"><span class="hint">Total</span><strong id="totalImages">0</strong></div><div class="stat"><span class="hint">Anotadas</span><strong id="annotatedImages">0</strong></div><div class="stat"><span class="hint">Gotas</span><strong id="dropletCount">0</strong></div></div>
+        </section>
+        <section class="card" style="padding:12px"><div class="head"><h3>Imagens</h3></div><div class="list" id="imageList"></div></section>
+        <section class="card" style="padding:12px">
+          <h3>Revisão das anotações salvas</h3>
+          <p class="hint">Salvar deixa as marcações pendentes. Somente imagens com todas as anotações aprovadas entram no treino. Revise a geometria, a classe e a escala antes de aprovar.</p>
+          <div class="field"><label for="reviewNotes">Notas da revisão</label><textarea id="reviewNotes" placeholder="Motivo ou observações do revisor"></textarea></div>
+          <div class="tool-grid" style="margin-top:8px">
+            <button class="btn ghost" id="approveSelectedBtn" type="button">Aprovar selecionada</button>
+            <button class="btn danger" id="rejectSelectedBtn" type="button">Rejeitar selecionada</button>
+            <button class="btn ghost" id="approveAllBtn" type="button">Aprovar todas salvas</button>
+            <button class="btn danger" id="rejectAllBtn" type="button">Rejeitar todas salvas</button>
+          </div><p class="hint" id="reviewStatus">Nenhuma imagem selecionada.</p>
+        </section>
+        <section class="card" style="padding:12px"><div class="head"><h3>Anotacoes</h3><span class="hint" id="annotationCount">0</span></div><div class="chips" id="typeSummary" style="margin-bottom:8px"></div><div class="list" id="annotationList"></div><div class="hint" id="densityText" style="margin-top:8px">Densidade: 0/cm2</div></section>
+      </aside>
     </div>
-
-    <script>
-        const appBase = window.location.pathname.replace(/\/static\/.*$/, '').replace(/\/$/, '');
-        const apiBase = `${appBase}/api/v1`;
-        const canvas = document.getElementById('annotationCanvas');
-        const ctx = canvas.getContext('2d');
-        const imageInfo = document.getElementById('imageInfo');
-        const zoomLabel = document.getElementById('zoomLabel');
-        const messageBox = document.getElementById('messageBox');
-        const uploadModal = document.getElementById('uploadModal');
-        const state = { images: [], currentImage: null, imageBitmap: null, annotations: [], scale: 1, selectedId: null };
-
-        function showMessage(text, type='success') { messageBox.textContent = text; messageBox.className = `msg ${type}`; }
-        function clearMessage() { messageBox.textContent = ''; messageBox.className = 'msg'; }
-        async function fetchJson(url, options) { const response = await fetch(url, options); const data = await response.json(); if (!response.ok) throw new Error(data.detail || data.message || 'Falha na requisição'); return data; }
-        function setZoom(value) { state.scale = Math.max(0.4, Math.min(4, value)); canvas.style.width = `${canvas.width * state.scale}px`; canvas.style.height = `${canvas.height * state.scale}px`; zoomLabel.textContent = `${Math.round(state.scale * 100)}%`; }
-        function getCanvasPoint(event) { const rect = canvas.getBoundingClientRect(); return { x: ((event.clientX - rect.left) / rect.width) * canvas.width, y: ((event.clientY - rect.top) / rect.height) * canvas.height }; }
-        function annotationAt(x, y) { return state.annotations.find((ann) => Math.hypot(ann.x - x, ann.y - y) <= ann.radius); }
-        function renderStats() {
-            const total = state.images.length;
-            const annotated = state.images.filter((img) => img.is_annotated).length;
-            const progress = total ? Math.round((annotated / total) * 100) : 0;
-            document.getElementById('totalImages').textContent = total;
-            document.getElementById('annotatedImages').textContent = annotated;
-            document.getElementById('progressText').textContent = `${progress}%`;
-            document.getElementById('selectedImageCount').textContent = `${total} itens`;
+  </main>
+  <div class="modal" id="uploadModal"><div class="modal-card"><div class="head"><h3>Upload para treinamento</h3><button class="btn ghost" type="button" id="closeUploadBtn">Fechar</button></div><div class="field"><label for="uploadFile">Arquivo</label><input id="uploadFile" type="file" accept="image/*"></div><div class="field"><label for="originalFilename">Nome original</label><input id="originalFilename" type="text" placeholder="Nome do arquivo"></div><div class="field"><label for="uploadNotes">Notas</label><textarea id="uploadNotes" placeholder="Ex.: papel amarelo, bico, pressao, cultura"></textarea></div><div class="chips" style="margin-top:12px"><button class="btn primary" id="confirmUploadBtn" type="button">Enviar imagem</button></div></div></div>
+  <script>
+    const appBase=window.location.pathname.replace(/\/static\/.*$/,'').replace(/\/$/,'');
+    const apiBase=`${appBase}/api/v1`,canvas=document.getElementById('annotationCanvas'),ctx=canvas.getContext('2d'),sourceCanvas=document.getElementById('sourceCanvas'),sourceCtx=sourceCanvas.getContext('2d',{willReadFrequently:true}),canvasWrap=document.getElementById('canvasWrap'),messageBox=document.getElementById('messageBox'),uploadModal=document.getElementById('uploadModal');
+    const TOOLS={droplet_small:{label:'Gota pequena',type:'droplet',size:'small',radius:4,min:2,max:7,color:'#0ea5e9'},droplet_medium:{label:'Gota media',type:'droplet',size:'medium',radius:8,min:5,max:13,color:'#22c55e'},droplet_large:{label:'Gota grande',type:'droplet',size:'large',radius:16,min:10,max:32,color:'#f59e0b'},droplet_duplicate:{label:'Gota duplicada',type:'droplet_duplicate',size:null,radius:12,min:5,max:36,color:'#ef4444'},dirt:{label:'Sujeira',type:'dirt',size:null,radius:16,min:4,max:90,color:'#7c3f16'},select:{label:'Selecionar',color:'#256d85'},delete:{label:'Excluir',color:'#991b1b'},pan:{label:'Mover imagem',color:'#1f261f'}};
+    const state={images:[],currentImage:null,image:null,annotations:[],selectedId:null,scale:1,tool:'droplet_medium',drawing:false,panStart:null,lastBrush:null,adminKey:'',connected:false,dirty:false,imageUrl:null,requestId:0,busy:false};
+    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v)); const median=values=>{const s=values.filter(Number.isFinite).sort((a,b)=>a-b);return s.length?s[Math.floor(s.length/2)]:0};
+    function showMessage(text,type='success'){messageBox.textContent=text;messageBox.className=`msg ${type}`} function clearMessage(){messageBox.textContent='';messageBox.className='msg'}
+    async function authFetch(url, options={}) {
+      if (!state.adminKey) throw new Error('Conecte com a chave privada antes de acessar o dataset.');
+      const headers = new Headers(options.headers || {});
+      headers.set('X-API-Key', state.adminKey);
+      return fetch(url, {...options, headers, cache:'no-store', credentials:'same-origin', redirect:'error'});
+    }
+    async function fetchJson(url, options={}) {
+      const response = await authFetch(url, options);
+      const text = await response.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_) { throw new Error(`Resposta inválida do servidor (${response.status}).`); }
+      if (!response.ok) {
+        const detail = data.detail || data.message || `Falha na requisição (${response.status}).`;
+        throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+      }
+      return data;
+    }
+    function updateAccess() {
+      ['reloadImagesBtn','openUploadBtn','saveBtn','exportBtn','confirmUploadBtn','approveSelectedBtn','rejectSelectedBtn','approveAllBtn','rejectAllBtn'].forEach(id => {
+        document.getElementById(id).disabled = !state.connected || state.busy;
+      });
+      document.getElementById('disconnectBtn').disabled = !state.connected || state.busy;
+      document.querySelectorAll('#imageList button,#annotationList button').forEach(button=>button.disabled=state.busy);
+    }
+    async function connectDataset() {
+      if(state.dirty && !confirm('Descartar alterações locais e reconectar?'))return;
+      const button = document.getElementById('connectBtn');
+      const key = document.getElementById('adminApiKey').value.trim();
+      if (!key) { showMessage('Informe a chave privada do dataset.','error'); return; }
+      state.adminKey = key;
+      document.getElementById('adminApiKey').value = '';
+      button.disabled = true; button.textContent = 'Conectando…';
+      try {
+        await loadImages(); state.connected = true; renderImageList(); updateAccess();
+        document.getElementById('connectionStatus').textContent = 'Conectado. Chave mantida somente na memória desta aba.';
+        showMessage('Acesso privado conectado. Selecione uma imagem para anotar ou revisar.');
+      } catch (error) {
+        disconnectDataset(); showMessage(error.message,'error');
+      } finally { button.disabled = false; button.textContent = 'Conectar'; }
+    }
+    function disconnectDataset() {
+      state.adminKey = ''; state.connected = false; state.images = []; state.annotations = [];
+      state.currentImage = null; state.image = null; state.selectedId = null; state.dirty = false; state.requestId++;
+      if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+      state.imageUrl = null;
+      document.getElementById('adminApiKey').value = '';
+      document.getElementById('pixelScale').value = '';
+      document.getElementById('imageInfo').textContent = 'Nenhuma imagem selecionada';
+      document.getElementById('connectionStatus').textContent = 'Desconectado. A chave foi descartada.';
+      renderImageList(); renderAnnotationList(); renderCanvas(); updateAccess();
+    }
+    function setZoom(v){state.scale=clamp(v,.25,6);canvas.style.width=`${canvas.width*state.scale}px`;canvas.style.height=`${canvas.height*state.scale}px`;document.getElementById('zoomLabel').textContent=`Zoom ${Math.round(state.scale*100)}%`}
+    function getCanvasPoint(e){const r=canvas.getBoundingClientRect();return{x:((e.clientX-r.left)/r.width)*canvas.width,y:((e.clientY-r.top)/r.height)*canvas.height}}
+    function annotationAt(x,y){for(let i=state.annotations.length-1;i>=0;i--){const a=state.annotations[i];if(Math.hypot(a.x-x,a.y-y)<=Math.max(a.radius,8))return a}return null}
+    function currentTool(){return TOOLS[state.tool]||TOOLS.droplet_medium} function selectTool(name){state.tool=name;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===name));document.getElementById('activeToolLabel').textContent=currentTool().label;if(TOOLS[name]?.radius)document.getElementById('presetRadius').value=TOOLS[name].radius}
+    function className(a){if(a.annotation_type==='dirt')return'Sujeira';if(a.annotation_type==='droplet_duplicate')return'Duplicada';return`Gota ${{small:'Pequena',medium:'Media',large:'Grande'}[a.droplet_size_class]||'Media'}`}
+    function colorFor(a){if(a.annotation_type==='dirt')return TOOLS.dirt.color;if(a.annotation_type==='droplet_duplicate')return TOOLS.droplet_duplicate.color;return TOOLS[`droplet_${a.droplet_size_class||'medium'}`]?.color||TOOLS.droplet_medium.color}
+    function renderCanvas(){ctx.clearRect(0,0,canvas.width,canvas.height);if(!state.image)return;ctx.drawImage(state.image,0,0,canvas.width,canvas.height);state.annotations.forEach((a,i)=>{const c=colorFor(a);ctx.save();ctx.globalAlpha=a.annotation_type==='dirt'?0.28:0.95;ctx.beginPath();ctx.arc(a.x,a.y,a.radius,0,Math.PI*2);if(a.annotation_type==='dirt'){ctx.fillStyle=c;ctx.fill()}ctx.strokeStyle=state.selectedId===a.id?'#111827':c;ctx.lineWidth=state.selectedId===a.id?4:2;ctx.setLineDash(a.annotation_type==='droplet_duplicate'?[7,4]:[]);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();if(state.scale>.45&&a.annotation_type!=='dirt'){ctx.font='12px Bahnschrift, sans-serif';ctx.fillStyle='#1f261f';ctx.fillText(String(i+1),a.x+a.radius+4,a.y-4)}ctx.restore()})}
+    function renderStats(){const total=state.images.length,annotated=state.images.filter(i=>i.is_annotated).length,droplets=state.annotations.filter(a=>a.annotation_type==='droplet').length;document.getElementById('totalImages').textContent=total;document.getElementById('annotatedImages').textContent=annotated;document.getElementById('dropletCount').textContent=droplets;document.getElementById('selectedImageCount').textContent=`${total} itens`}
+    function renderImageList() {
+      const list = document.getElementById('imageList'); list.replaceChildren();
+      if (!state.images.length) { const row=document.createElement('div'); row.className='row'; row.textContent=state.connected?'Nenhuma imagem no dataset.':'Conecte para carregar as imagens privadas.'; list.append(row); return; }
+      for (const image of state.images) {
+        const row=document.createElement('button'); row.type='button'; row.className=`row ${state.currentImage?.id===image.id?'active':''}`;
+        const title=document.createElement('strong'); title.textContent=image.original_filename || image.filename || 'Imagem';
+        const detail=document.createElement('div'); detail.className='hint';
+        detail.textContent=`${image.size} · ${image.annotation_count ?? 0} anotações · ${image.is_validated?'revisada para treino':image.is_annotated?'aguarda revisão':'sem anotações'}`;
+        row.append(title,detail); row.addEventListener('click',()=>selectImage(image.id).catch(error=>showMessage(error.message,'error'))); list.append(row);
+      }
+    }
+    function renderAnnotationList() {
+      const list=document.getElementById('annotationList'), summary=document.getElementById('typeSummary');
+      list.replaceChildren(); summary.replaceChildren();
+      const counts=state.annotations.reduce((map,annotation)=>(map[className(annotation)]=(map[className(annotation)]||0)+1,map),{});
+      document.getElementById('annotationCount').textContent=state.annotations.length;
+      for (const [name,count] of Object.entries(counts)) { const chip=document.createElement('span'); chip.className='chip'; chip.textContent=`${name}: ${count}`; summary.append(chip); }
+      if (!state.annotations.length) { const row=document.createElement('div'); row.className='row'; row.textContent='Nenhuma anotação.'; list.append(row); }
+      for (const [index,annotation] of state.annotations.entries()) {
+        const row=document.createElement('button'); row.type='button'; row.className=`row ${state.selectedId===annotation.id?'active':''}`;
+        const title=document.createElement('strong'); title.textContent=`${index+1}. ${className(annotation)}`;
+        const detail=document.createElement('div'); detail.className='hint';
+        const status=({approved:'aprovada',rejected:'rejeitada',pending:'pendente'})[annotation.review_status] || 'não salva';
+        detail.textContent=`x ${Math.round(annotation.x)}, y ${Math.round(annotation.y)} · raio ${Number(annotation.radius).toFixed(1)} px · ${Math.round((annotation.confidence ?? 1)*100)}% · ${status}`;
+        row.append(title,detail); row.addEventListener('click',()=>{state.selectedId=annotation.id; renderAnnotationList(); renderCanvas();}); list.append(row);
+      }
+      const approved=state.annotations.filter(annotation=>annotation.review_status==='approved').length;
+      document.getElementById('reviewStatus').textContent=state.dirty?'Há alterações locais: salve antes de revisar.':state.currentImage?`${approved}/${state.annotations.length} aprovadas. ${state.currentImage.is_validated?'Imagem revisada para treino.':'Imagem ainda não validada para treino.'}`:'Nenhuma imagem selecionada.';
+      updateDensity(); renderStats();
+    }
+    function physicalScale() {
+      const value=Number(document.getElementById('pixelScale').value);
+      return Number.isFinite(value) && value>0 ? value : null;
+    }
+    function updateDensity() {
+      const scale=physicalScale();
+      if (!state.currentImage || !scale) { document.getElementById('densityText').textContent='Densidade física indisponível: confirme uma escala positiva em mm/pixel.'; return; }
+      const area=state.currentImage.image_width*state.currentImage.image_height*scale*scale/100;
+      const drops=state.annotations.filter(annotation=>annotation.annotation_type==='droplet').length;
+      document.getElementById('densityText').textContent=`Densidade anotada: ${(drops/area).toFixed(1)}/cm² (manchas marcadas, sem correção de espalhamento)`;
+    }
+    function getPixel(x,y){x=clamp(Math.round(x),0,sourceCanvas.width-1);y=clamp(Math.round(y),0,sourceCanvas.height-1);const d=sourceCtx.getImageData(x,y,1,1).data;return[d[0],d[1],d[2]]} function colorDistance(a,b){return Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2])}
+    function sampleRing(x,y,r,count=40){const colors=[];for(let i=0;i<count;i++){const a=Math.PI*2*i/count;colors.push(getPixel(x+Math.cos(a)*r,y+Math.sin(a)*r))}return[0,1,2].map(ch=>median(colors.map(c=>c[ch])))}
+    function estimateRadiusFromColor(x,y,base,tool){if(!sourceCanvas.width)return{radius:base,profile:{method:'fallback'}};const max=clamp(Math.max(tool.max||base*2,base+4),tool.min||1,Math.max(tool.max||80,base)),bg=sampleRing(x,y,clamp(max*1.45,base+5,Math.max(sourceCanvas.width,sourceCanvas.height)),48),center=sampleRing(x,y,1.5,10),delta=colorDistance(center,bg),threshold=clamp(delta*.34,18,58),hits=[];for(let i=0;i<48;i++){const ang=Math.PI*2*i/48;let last=0,miss=0;for(let r=1;r<=max;r++){const p=getPixel(x+Math.cos(ang)*r,y+Math.sin(ang)*r);if(colorDistance(p,bg)>=threshold){last=r;miss=0}else if(last>0&&++miss>=2)break}if(last>0)hits.push(last)}return{radius:clamp(median(hits)||base,tool.min||1,tool.max||80),profile:{method:'radial_rgb_background',background_rgb:bg.map(Math.round),center_rgb:center.map(Math.round),threshold:Math.round(threshold),color_delta:Math.round(delta),samples:hits.length}}}
+    function buildAnnotation(p,toolName){const tool=TOOLS[toolName],base=toolName==='dirt'?Number(document.getElementById('brushRadius').value||tool.radius):Number(document.getElementById('presetRadius').value||tool.radius);let radius=clamp(base,tool.min||1,tool.max||90),auto=false,profile=null;if(document.getElementById('autoAdjust').checked&&tool.type!=='dirt'){const e=estimateRadiusFromColor(p.x,p.y,radius,tool);radius=e.radius;profile=e.profile;auto=true}else if(sourceCanvas.width)profile={method:'manual',center_rgb:getPixel(p.x,p.y)};return{id:Date.now()+Math.random(),x:p.x,y:p.y,radius,confidence:document.getElementById('confidenceValue').value===''?1:Number(document.getElementById('confidenceValue').value),annotation_type:tool.type,droplet_size_class:tool.size,shape_type:'circle',color_profile:profile,auto_adjusted_radius:auto,source_tool:toolName,is_overlapping:tool.type==='droplet_duplicate'}}
+    function addAnnotation(p,toolName=state.tool){state.dirty=true;state.annotations.push(buildAnnotation(p,toolName));state.selectedId=state.annotations[state.annotations.length-1].id;renderAnnotationList();renderCanvas()} function brushDirt(p){const r=Number(document.getElementById('brushRadius').value||16);if(state.lastBrush&&Math.hypot(state.lastBrush.x-p.x,state.lastBrush.y-p.y)<r*.55)return;state.lastBrush=p;addAnnotation(p,'dirt')}
+    async function loadImages() {
+      const images=[]; let skip=0;
+      while (true) {
+        const data=await fetchJson(`${apiBase}/dataset/images?limit=100&skip=${skip}`);
+        images.push(...(data.images || []));
+        if (!data.images?.length || images.length>=data.total) break;
+        skip+=data.images.length;
+      }
+      state.images=images; renderImageList(); renderStats();
+    }
+    async function selectImage(id, discard=false) {
+      if (state.dirty && !discard && !confirm('Descartar alterações locais ainda não salvas?')) return;
+      const record=state.images.find(image=>image.id===id);
+      if (!record) return;
+      const requestId=++state.requestId;
+      const response=await authFetch(`${apiBase}/dataset/image/${id}`);
+      if (!response.ok) throw new Error(`Não foi possível carregar a imagem privada (${response.status}).`);
+      const url=URL.createObjectURL(await response.blob());
+      try {
+        const image=await new Promise((resolve,reject)=>{const item=new Image();item.onload=()=>resolve(item);item.onerror=()=>reject(new Error('Formato de imagem inválido.'));item.src=url;});
+        const data=await fetchJson(`${apiBase}/dataset/image/${id}/annotations`);
+        if (requestId!==state.requestId) { URL.revokeObjectURL(url); return; }
+        if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+        state.imageUrl=url; state.image=image; state.currentImage=record; state.dirty=false;
+        state.annotations=(data.annotations || []).map(annotation=>({...annotation,annotation_type:annotation.annotation_type || 'droplet',droplet_size_class:annotation.droplet_size_class || 'medium',radius:Number(annotation.radius ?? 8),confidence:annotation.confidence ?? 1,review_status:annotation.review_status || 'pending'}));
+        state.selectedId=null;
+        const savedScale=Number(record.pixel_to_mm_ratio);
+        document.getElementById('pixelScale').value=Number.isFinite(savedScale)&&savedScale>0?String(savedScale):'';
+        document.getElementById('imageInfo').textContent=`${record.original_filename} · ${record.size}`;
+        canvas.width=image.naturalWidth; canvas.height=image.naturalHeight;
+        sourceCanvas.width=image.naturalWidth; sourceCanvas.height=image.naturalHeight; sourceCtx.drawImage(image,0,0);
+        setZoom(Math.min(1,Math.max(.25,(canvasWrap.clientWidth-18)/image.naturalWidth)));
+        renderImageList(); renderAnnotationList(); renderCanvas();
+      } catch (error) { URL.revokeObjectURL(url); throw error; }
+    }
+    async function saveAnnotations() {
+      if (!state.currentImage) { showMessage('Selecione uma imagem antes de salvar.','error'); return; }
+      const scale=physicalScale();
+      if (!scale) { showMessage('Informe uma escala conhecida, finita e positiva em mm/pixel antes de salvar diâmetros físicos.','error'); return; }
+      if(state.busy)return;state.busy=true;updateAccess();
+      const button=document.getElementById('saveBtn'); button.disabled=true; button.textContent='Salvando…';
+      try {
+        const id=state.currentImage.id, annotator=document.getElementById('annotatorName').value.trim() || 'system';
+        const body=state.annotations.map(annotation=>({x:annotation.x,y:annotation.y,radius:annotation.radius,confidence:annotation.confidence ?? 1,diameter_mm:annotation.radius*2*scale,annotation_type:annotation.annotation_type,droplet_size_class:annotation.droplet_size_class,shape_type:annotation.shape_type || 'circle',color_profile:annotation.color_profile,auto_adjusted_radius:!!annotation.auto_adjusted_radius,source_tool:annotation.source_tool,is_overlapping:annotation.is_overlapping || annotation.annotation_type==='droplet_duplicate'}));
+        const query=new URLSearchParams({annotated_by:annotator,pixel_to_mm_ratio:String(scale)});
+        await fetchJson(`${apiBase}/dataset/image/${id}/annotations?${query}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        state.dirty=false; await loadImages(); await selectImage(id,true);
+        showMessage('Anotações salvas como pendentes. Revise e aprove explicitamente antes de usar esta imagem no treinamento.');
+      } catch (error) { showMessage(`Erro ao salvar: ${error.message}`,'error'); }
+      finally { state.busy=false;updateAccess();button.textContent='Salvar anotacoes'; }
+    }
+    async function reviewAnnotations(status, all=false) {
+      if (!state.currentImage || state.dirty) { showMessage('Selecione uma imagem e salve suas alterações antes de revisar.','error'); return; }
+      const annotations=all?state.annotations:state.annotations.filter(annotation=>annotation.id===state.selectedId);
+      if (!annotations.length) { showMessage('Selecione uma anotação salva para revisar.','error'); return; }
+      if (all && !confirm(`${status==='approved'?'Aprovar':'Rejeitar'} explicitamente todas as ${annotations.length} anotações salvas desta imagem?`)) return;
+      const reviewer=document.getElementById('annotatorName').value.trim();
+      if (!reviewer) { showMessage('Informe o nome do revisor no campo Anotador.','error'); return; }
+      if(state.busy)return;state.busy=true;updateAccess();
+      const id=state.currentImage.id; let completed=0;
+      ['approveSelectedBtn','rejectSelectedBtn','approveAllBtn','rejectAllBtn'].forEach(key=>document.getElementById(key).disabled=true);
+      try {
+        for (const annotation of annotations) {
+          const form=new FormData(); form.append('status',status); form.append('reviewed_by',reviewer); form.append('notes',document.getElementById('reviewNotes').value);
+          await fetchJson(`${apiBase}/dataset/annotation/${annotation.id}/review`,{method:'PUT',body:form}); completed++;
         }
-        function renderImageList() {
-            const list = document.getElementById('imageList');
-            if (!state.images.length) { list.innerHTML = '<div class="row">Nenhuma imagem disponível.</div>'; return; }
-            list.innerHTML = state.images.map((img) => `
-                <div class="row ${state.currentImage?.id === img.id ? 'active' : ''}" data-id="${img.id}">
-                    <strong>${img.original_filename}</strong>
-                    <div class="hint">${img.size} • ${img.annotation_count || 0} gotículas • ${img.is_annotated ? 'anotada' : 'pendente'}</div>
-                </div>`).join('');
-            list.querySelectorAll('[data-id]').forEach((item) => item.addEventListener('click', () => selectImage(Number(item.dataset.id))));
-        }
-        function renderAnnotationList() {
-            const list = document.getElementById('annotationList');
-            document.getElementById('annotationCount').textContent = `${state.annotations.length} gotículas`;
-            if (!state.annotations.length) { list.innerHTML = '<div class="row">Nenhuma anotação.</div>'; document.getElementById('densityText').textContent = 'Densidade estimada: 0/cm²'; return; }
-            list.innerHTML = state.annotations.map((ann, index) => `
-                <div class="row ${state.selectedId === ann.id ? 'active' : ''}" data-ann="${ann.id}">
-                    <strong>Gotícula ${index + 1}</strong>
-                    <div class="hint">(${Math.round(ann.x)}, ${Math.round(ann.y)}) • raio ${ann.radius}px • ${Math.round((ann.confidence || 1) * 100)}%</div>
-                </div>`).join('');
-            list.querySelectorAll('[data-ann]').forEach((item) => item.addEventListener('click', () => { state.selectedId = Number(item.dataset.ann); renderAnnotationList(); renderCanvas(); }));
-            if (state.currentImage) {
-                const scale = parseFloat(document.getElementById('pixelScale').value || '0.1');
-                const areaCm2 = (state.currentImage.image_width * state.currentImage.image_height * scale * scale) / 100;
-                const density = areaCm2 > 0 ? (state.annotations.length / areaCm2).toFixed(1) : '0.0';
-                document.getElementById('densityText').textContent = `Densidade estimada: ${density}/cm²`;
-            }
-        }
-        function renderCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (!state.imageBitmap) return;
-            ctx.drawImage(state.imageBitmap, 0, 0, canvas.width, canvas.height);
-            state.annotations.forEach((ann, index) => {
-                ctx.beginPath(); ctx.arc(ann.x, ann.y, ann.radius, 0, Math.PI * 2);
-                ctx.strokeStyle = state.selectedId === ann.id ? '#f59e0b' : '#0f766e';
-                ctx.lineWidth = state.selectedId === ann.id ? 3 : 2; ctx.stroke();
-                ctx.beginPath(); ctx.arc(ann.x, ann.y, 2, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
-                ctx.fillStyle = '#102a43'; ctx.font = '12px Segoe UI'; ctx.fillText(String(index + 1), ann.x + ann.radius + 4, ann.y - 4);
-            });
-        }
-        async function loadImages() {
-            try {
-                clearMessage();
-                const data = await fetchJson(`${apiBase}/dataset/images`);
-                state.images = data.images || [];
-                renderImageList();
-                renderStats();
-            } catch (error) {
-                showMessage(`Erro ao carregar imagens: ${error.message}`, 'error');
-            }
-        }
-        async function selectImage(imageId) {
-            try {
-                clearMessage();
-                state.currentImage = state.images.find((img) => img.id === imageId) || null;
-                if (!state.currentImage) return;
-                imageInfo.textContent = `${state.currentImage.original_filename} • ${state.currentImage.size}`;
-                const image = new Image();
-                image.onload = async () => {
-                    state.imageBitmap = image;
-                    canvas.width = image.width;
-                    canvas.height = image.height;
-                    setZoom(Math.min(1, (document.getElementById('canvasWrap').clientWidth - 12) / image.width || 1));
-                    renderCanvas();
-                };
-                image.src = state.currentImage.file_url ? `${appBase}${state.currentImage.file_url}` : `${apiBase}/dataset/image/${imageId}`;
-                const annData = await fetchJson(`${apiBase}/dataset/image/${imageId}/annotations`);
-                state.annotations = (annData.annotations || []).map((ann) => ({ ...ann, id: ann.id || Date.now() + Math.random() }));
-                state.selectedId = null;
-                renderImageList();
-                renderAnnotationList();
-                renderCanvas();
-            } catch (error) {
-                showMessage(`Erro ao carregar imagem: ${error.message}`, 'error');
-            }
-        }
-        function addAnnotation(x, y) {
-            const radius = Number(document.getElementById('defaultRadius').value || 5);
-            const confidence = Number(document.getElementById('confidenceValue').value || 1);
-            state.annotations.push({ id: Date.now() + Math.random(), x, y, radius, confidence });
-            renderAnnotationList();
-            renderCanvas();
-        }
-        function clearAnnotations() { state.annotations = []; state.selectedId = null; renderAnnotationList(); renderCanvas(); }
-        async function saveAnnotations() {
-            if (!state.currentImage) { showMessage('Selecione uma imagem antes de salvar.', 'error'); return; }
-            try {
-                const annotator = encodeURIComponent(document.getElementById('annotatorName').value || 'system');
-                const scale = parseFloat(document.getElementById('pixelScale').value || '0.1');
-                const body = state.annotations.map((ann) => ({ x: ann.x, y: ann.y, radius: ann.radius, confidence: ann.confidence, diameter_mm: ann.radius * 2 * scale }));
-                await fetchJson(`${apiBase}/dataset/image/${state.currentImage.id}/annotations?annotated_by=${annotator}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) });
-                showMessage('Anotações salvas com sucesso.');
-                await loadImages();
-                await selectImage(state.currentImage.id);
-            } catch (error) {
-                showMessage(`Erro ao salvar anotações: ${error.message}`, 'error');
-            }
-        }
-        async function exportDataset() {
-            try {
-                const data = await fetchJson(`${apiBase}/dataset/export?format=coco`);
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url; link.download = 'dataset_coco.json'; link.click(); URL.revokeObjectURL(url);
-            } catch (error) {
-                showMessage(`Erro ao exportar dataset: ${error.message}`, 'error');
-            }
-        }
-        function handleCanvasPointer(event) {
-            if (!state.currentImage || !state.imageBitmap) return;
-            const mode = document.getElementById('annotationMode').value;
-            const point = getCanvasPoint(event);
-            const target = annotationAt(point.x, point.y);
-            if (mode === 'add') addAnnotation(point.x, point.y);
-            else if (mode === 'delete' && target) { state.annotations = state.annotations.filter((ann) => ann.id !== target.id); if (state.selectedId === target.id) state.selectedId = null; renderAnnotationList(); renderCanvas(); }
-            else if (mode === 'select') { state.selectedId = target ? target.id : null; renderAnnotationList(); renderCanvas(); }
-        }
-        function openUploadModal() { uploadModal.classList.add('open'); }
-        function closeUploadModal() { uploadModal.classList.remove('open'); }
-        async function performUpload() {
-            try {
-                const file = document.getElementById('uploadFile').files[0];
-                if (!file) { showMessage('Selecione um arquivo para upload.', 'error'); return; }
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('original_filename', document.getElementById('originalFilename').value || file.name);
-                formData.append('notes', document.getElementById('uploadNotes').value);
-                formData.append('uploaded_by', document.getElementById('annotatorName').value || 'system');
-                await fetchJson(`${apiBase}/dataset/upload`, { method:'POST', body:formData });
-                closeUploadModal();
-                showMessage('Imagem enviada com sucesso.');
-                await loadImages();
-            } catch (error) {
-                showMessage(`Erro no upload: ${error.message}`, 'error');
-            }
-        }
-
-        canvas.addEventListener('pointerdown', handleCanvasPointer);
-        document.getElementById('reloadImagesBtn').addEventListener('click', loadImages);
-        document.getElementById('saveBtn').addEventListener('click', saveAnnotations);
-        document.getElementById('exportBtn').addEventListener('click', exportDataset);
-        document.getElementById('openUploadBtn').addEventListener('click', openUploadModal);
-        document.getElementById('closeUploadBtn').addEventListener('click', closeUploadModal);
-        document.getElementById('confirmUploadBtn').addEventListener('click', performUpload);
-        document.getElementById('zoomOutBtn').addEventListener('click', () => setZoom(state.scale / 1.2));
-        document.getElementById('zoomResetBtn').addEventListener('click', () => setZoom(1));
-        document.getElementById('zoomInBtn').addEventListener('click', () => setZoom(state.scale * 1.2));
-        document.getElementById('clearBtn').addEventListener('click', clearAnnotations);
-        loadImages();
-    </script>
+        await loadImages(); await selectImage(id,true);
+        showMessage(`${completed} anotação(ões) ${status==='approved'?'aprovada(s)':'rejeitada(s)'}. ${state.currentImage?.is_validated?'Todas aprovadas: imagem validada para treino.':'A imagem ainda não está validada para treino.'}`);
+      } catch (error) {
+        try { await loadImages(); await selectImage(id,true); } catch (_) { /* Preserve the original review error. */ }
+        showMessage(`Revisão parcial: ${completed} concluída(s). ${error.message}`,'error');
+      } finally { state.busy=false;updateAccess(); }
+    }
+    async function exportDataset(){try{const data=await fetchJson(`${apiBase}/dataset/export?format=coco`),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='siopa_dataset_coco.json';link.click();URL.revokeObjectURL(url)}catch(e){showMessage(`Erro ao exportar: ${e.message}`,'error')}}
+    function deleteAnnotation(a){if(!a)return;state.dirty=true;state.annotations=state.annotations.filter(i=>i.id!==a.id);if(state.selectedId===a.id)state.selectedId=null;renderAnnotationList();renderCanvas()}
+    function pointerDown(e){if(state.busy||!state.connected||!state.currentImage||!state.image)return;const p=getCanvasPoint(e),hit=annotationAt(p.x,p.y);state.drawing=true;if(state.tool==='pan'){state.panStart={x:e.clientX,y:e.clientY,left:canvasWrap.scrollLeft,top:canvasWrap.scrollTop};return}if(state.tool==='select'){state.selectedId=hit?hit.id:null;renderAnnotationList();renderCanvas();return}if(state.tool==='delete'){deleteAnnotation(hit);return}if(state.tool==='dirt'){state.lastBrush=null;brushDirt(p);return}addAnnotation(p)}
+    function pointerMove(e){if(!state.drawing)return;if(state.tool==='pan'&&state.panStart){canvasWrap.scrollLeft=state.panStart.left-(e.clientX-state.panStart.x);canvasWrap.scrollTop=state.panStart.top-(e.clientY-state.panStart.y);return}if(state.tool==='dirt')brushDirt(getCanvasPoint(e))} function pointerUp(){state.drawing=false;state.panStart=null;state.lastBrush=null}
+    function clearAnnotations(){if(state.busy||!state.currentImage)return;if(!confirm('Remover todas as marcações locais? A alteração só será enviada ao salvar.'))return;state.dirty=true;state.annotations=[];state.selectedId=null;renderAnnotationList();renderCanvas()} function openUploadModal(){uploadModal.classList.add('open')} function closeUploadModal(){uploadModal.classList.remove('open')}
+    async function performUpload() {
+      const button=document.getElementById('confirmUploadBtn');
+      try {
+        const file=document.getElementById('uploadFile').files[0];
+        if (!file) throw new Error('Selecione um arquivo.');
+        const scale=physicalScale();
+        if (document.getElementById('pixelScale').value!=='' && !scale) throw new Error('Escala deve ser finita e positiva, ou ficar vazia quando desconhecida.');
+        button.disabled=true; button.textContent='Enviando…';
+        const form=new FormData(); form.append('file',file); form.append('original_filename',document.getElementById('originalFilename').value || file.name); form.append('notes',document.getElementById('uploadNotes').value); form.append('uploaded_by',document.getElementById('annotatorName').value || 'system');
+        if (scale) form.append('pixel_to_mm_ratio',String(scale));
+        const data=await fetchJson(`${apiBase}/dataset/upload`,{method:'POST',body:form});
+        closeUploadModal(); await loadImages(); await selectImage(data.image_id);
+        showMessage('Imagem enviada. Confirme sua escala e crie as anotações; a revisão virá após salvar.');
+      } catch (error) { showMessage(`Erro no upload: ${error.message}`,'error'); }
+      finally { button.disabled=!state.connected; button.textContent='Enviar imagem'; }
+    }
+    document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool)));canvas.addEventListener('pointerdown',pointerDown);canvas.addEventListener('pointermove',pointerMove);window.addEventListener('pointerup',pointerUp);document.getElementById('reloadImagesBtn').addEventListener('click',()=>loadImages().catch(error=>showMessage(error.message,'error')));document.getElementById('openUploadBtn').addEventListener('click',openUploadModal);document.getElementById('closeUploadBtn').addEventListener('click',closeUploadModal);document.getElementById('confirmUploadBtn').addEventListener('click',performUpload);document.getElementById('saveBtn').addEventListener('click',saveAnnotations);document.getElementById('exportBtn').addEventListener('click',exportDataset);document.getElementById('zoomOutBtn').addEventListener('click',()=>setZoom(state.scale/1.25));document.getElementById('zoomResetBtn').addEventListener('click',()=>setZoom(1));document.getElementById('zoomInBtn').addEventListener('click',()=>setZoom(state.scale*1.25));document.getElementById('clearBtn').addEventListener('click',clearAnnotations);document.getElementById('pixelScale').addEventListener('input',()=>{if(state.currentImage)state.dirty=true;renderAnnotationList();});
+    document.getElementById('connectBtn').addEventListener('click',connectDataset);
+    document.getElementById('disconnectBtn').addEventListener('click',()=>{if(!state.dirty || confirm('Descartar alterações locais e desconectar?'))disconnectDataset();});
+    document.getElementById('adminApiKey').addEventListener('keydown',event=>{if(event.key==='Enter')connectDataset();});
+    document.getElementById('approveSelectedBtn').addEventListener('click',()=>reviewAnnotations('approved'));
+    document.getElementById('rejectSelectedBtn').addEventListener('click',()=>reviewAnnotations('rejected'));
+    document.getElementById('approveAllBtn').addEventListener('click',()=>reviewAnnotations('approved',true));
+    document.getElementById('rejectAllBtn').addEventListener('click',()=>reviewAnnotations('rejected',true));
+    window.addEventListener('beforeunload',event=>{if(state.imageUrl)URL.revokeObjectURL(state.imageUrl);if(state.dirty){event.preventDefault();event.returnValue='';}});
+    selectTool('droplet_medium'); updateAccess(); renderImageList();
+  </script>
 </body>
 </html>

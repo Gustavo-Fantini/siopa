@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import Generator
 
 from loguru import logger
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import MetaData, create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.engine import make_url
 
 from app.core.config import settings
 from app.models.database import Base
@@ -48,13 +49,14 @@ def init_database():
     Inicializa o banco de dados criando todas as tabelas.
     """
     try:
-        logger.info(f"Inicializando banco de dados em {settings.resolved_database_url}")
+        logger.info("Inicializando banco de dados: {}", settings.database_backend)
 
         sqlite_path = settings.sqlite_database_path
         if sqlite_path is not None:
             sqlite_path.parent.mkdir(parents=True, exist_ok=True)
 
         Base.metadata.create_all(bind=engine)
+        _apply_lightweight_migrations()
         _create_initial_data()
 
         logger.info("Banco de dados inicializado com sucesso")
@@ -94,10 +96,7 @@ def _create_initial_data():
             architecture="opencv_adaptive_threshold",
             description="Modelo fallback baseado em OpenCV para segmentação de gotículas",
             is_active=True,
-            accuracy=0.75,
-            precision=0.70,
-            recall=0.80,
-            f1_score=0.75,
+            # No measured performance is assigned to a fallback without an experiment.
         )
 
         db.add(opencv_model)
@@ -108,6 +107,39 @@ def _create_initial_data():
         logger.warning(f"Erro ao criar dados iniciais: {exc}")
     finally:
         db.close()
+
+
+def _apply_lightweight_migrations():
+    """Add backward-compatible columns for existing SQLite/Postgres databases."""
+    try:
+        inspector = inspect(engine)
+        if "image_annotations" not in inspector.get_table_names():
+            return
+
+        existing_columns = {
+            column["name"]
+            for column in inspector.get_columns("image_annotations")
+        }
+        required_columns = {
+            "annotation_type": "VARCHAR(50) DEFAULT 'droplet'",
+            "droplet_size_class": "VARCHAR(20)",
+            "shape_type": "VARCHAR(20) DEFAULT 'circle'",
+            "color_profile": "JSON",
+            "auto_adjusted_radius": "BOOLEAN DEFAULT FALSE",
+            "source_tool": "VARCHAR(50)",
+            "mask_points": "JSON",
+        }
+
+        with engine.begin() as connection:
+            for column_name, column_type in required_columns.items():
+                if column_name in existing_columns:
+                    continue
+                connection.execute(
+                    text(f"ALTER TABLE image_annotations ADD COLUMN {column_name} {column_type}")
+                )
+                logger.info(f"Migracao aplicada: image_annotations.{column_name}")
+    except Exception as exc:
+        logger.warning(f"Migracao leve de banco nao aplicada: {exc}")
 
 
 def reset_database():
@@ -130,7 +162,7 @@ def backup_database(backup_path: str = None):
     Cria backup do banco de dados SQLite.
     """
     try:
-        import shutil
+        import sqlite3
         from datetime import datetime
 
         sqlite_path = settings.sqlite_database_path
@@ -141,7 +173,10 @@ def backup_database(backup_path: str = None):
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             backup_path = f"backup_db_{timestamp}.sqlite"
 
-        shutil.copy2(sqlite_path, backup_path)
+        source_uri = f"{sqlite_path.resolve().as_uri()}?mode=ro"
+        with sqlite3.connect(source_uri, uri=True) as source:
+            with sqlite3.connect(backup_path) as destination:
+                source.backup(destination)
         logger.info(f"Backup criado em: {backup_path}")
         return backup_path
     except Exception as exc:
@@ -164,7 +199,7 @@ def get_database_stats():
         )
 
         return {
-            "database_url": settings.resolved_database_url,
+            "database_url": make_url(settings.resolved_database_url).render_as_string(hide_password=True),
             "total_images": db.query(ImageDataset).count(),
             "annotated_images": db.query(ImageDataset).filter(ImageDataset.is_annotated == True).count(),
             "validated_images": db.query(ImageDataset).filter(ImageDataset.is_validated == True).count(),
@@ -178,7 +213,7 @@ def get_database_stats():
         }
     except Exception as exc:
         logger.error(f"Erro ao obter estatísticas: {exc}")
-        return {"database_url": settings.resolved_database_url}
+        return {"database_backend": settings.database_backend, "status": "unavailable"}
     finally:
         db.close()
 
@@ -196,11 +231,13 @@ class DatabaseTransaction:
         return self.db
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
-            self.db.commit()
-        else:
-            self.db.rollback()
-        self.db.close()
+        try:
+            if exc_type is None:
+                self.db.commit()
+            else:
+                self.db.rollback()
+        finally:
+            self.db.close()
 
 
 def with_db_session(func):

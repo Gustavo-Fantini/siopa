@@ -1,4 +1,7 @@
 .git
+.tools/
+mobile/
+artifacts/
 .gitignore
 .env
 .env.local
@@ -9,6 +12,8 @@ __pycache__/
 *.pyc
 logs/
 data/
+!app/data/
+!app/data/crops.json
 app.db
 tests/
 docs/

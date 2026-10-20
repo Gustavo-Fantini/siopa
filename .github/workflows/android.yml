@@ -1,0 +1,29 @@
+name: Android Debug
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["mobile/**", "app/static/**", "app/data/crops.json", ".github/workflows/android.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;34.0.0"
+      - name: Build and lint debug APK
+        run: |
+          sh mobile/build-android.sh
+          sh mobile/build-android.sh lintDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: siopa-android-debug
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk

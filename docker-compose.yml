@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      PORT: "8000"
     ports:
       - "${PORT:-8000}:8000"
     volumes:

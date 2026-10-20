@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     """Configurações da aplicação."""
 
     APP_NAME: str = "Sistema Inteligente Pulverização"
-    APP_VERSION: str = "2.0.0"
+    APP_VERSION: str = "3.0.0"
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
     HOST: str = "0.0.0.0"
@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ENABLE_PWA: bool = True
     ENABLE_FILE_LOGGING: bool = True
+    ENABLE_DATASET_API: bool = False
+    ADMIN_API_KEY: Optional[str] = None
 
     DATABASE_URL: Optional[str] = None
     DATABASE_PATH: str = "data/app.db"
@@ -32,9 +34,18 @@ class Settings(BaseSettings):
     OPENWEATHER_API_KEY: Optional[str] = None
     WEATHERAPI_KEY: Optional[str] = None
     CLIMATEMPO_TOKEN: Optional[str] = None
+    OPEN_METEO_API_URL: str = "https://api.open-meteo.com/v1/forecast"
+    OPEN_METEO_API_KEY: Optional[str] = None
+    ENVIRONMENT_CACHE_PATH: str = "data/environment"
+    ENVIRONMENT_CACHE_TTL_SECONDS: int = 3600
+    SOILGRIDS_API_URL: str = "https://rest.isric.org/soilgrids/v2.0/properties/query"
 
     EMBRAPA_API_KEY: Optional[str] = None
     AGRO_API_TOKEN: Optional[str] = None
+    AGROFIT_CKAN_API_URL: str = "https://dados.agricultura.gov.br/api/3/action/package_show"
+    AGROFIT_CKAN_PACKAGE_ID: str = "sistema-de-agrotoxicos-fitossanitarios-agrofit"
+    AGROFIT_CACHE_PATH: str = "data/agrofit"
+    AGROFIT_REFRESH_HOURS: int = 24
 
     GOOGLE_MAPS_API_KEY: Optional[str] = None
     IBGE_API_URL: str = "https://servicodados.ibge.gov.br/api/v1"
@@ -54,13 +65,16 @@ class Settings(BaseSettings):
     BATCH_SIZE: int = 32
     IMAGE_SIZE: Tuple[int, int] = (512, 512)
     PIXEL_TO_MM: float = 0.1
-    DROPLET_COVERAGE_SCALE: float = 1.3
+    # Compatibility only: measured coverage is never scaled by this legacy setting.
+    DROPLET_COVERAGE_SCALE: float = 1.0
     MICROPOROUS_PAPER_WIDTH_MM: float = 76.0
     MICROPOROUS_PAPER_HEIGHT_MM: float = 26.0
-    PAPER_ANALYSIS_LONG_EDGE_PX: int = 1200
+    PAPER_ANALYSIS_LONG_EDGE_PX: int = 2400
     PAPER_BORDER_MARGIN_RATIO: float = 0.02
     MIN_DROPLET_RADIUS_MM: float = 0.03
     MAX_DROPLET_RADIUS_MM: float = 1.25
+    MIN_STAIN_DIAMETER_MM: float = 0.10
+    MAX_IMAGE_PIXELS: int = 40_000_000
 
     MAX_IMAGE_SIZE: int = 10 * 1024 * 1024
     MIN_TRAINING_IMAGES: int = 5
@@ -132,6 +146,8 @@ class Settings(BaseSettings):
         "MODEL_PATH",
         "TEMP_UPLOAD_PATH",
         "DATASET_PATH",
+        "AGROFIT_CACHE_PATH",
+        "ENVIRONMENT_CACHE_PATH",
         "LOG_FILE",
         "DATABASE_PATH",
         mode="before",

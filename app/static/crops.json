@@ -1,0 +1,4469 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-10-20",
+  "sources": [
+    {
+      "id": "fao_crop_list",
+      "scope": "Identidade/grupos de culturas; não é prescrição de aplicação",
+      "license": "FAO: consultar licença da publicação de origem; nomes factuais e tradução editorial",
+      "accessed_at": "2026-10-20",
+      "title": "FAO World Programme for the Census of Agriculture crop list",
+      "url": "https://www.fao.org/statistics/caliper/classifications/wca/en"
+    },
+    {
+      "id": "grin_taxonomy",
+      "scope": "Referência taxonômica; nomes locais informativos, não resolução de todas as sinonímias",
+      "license": "USDA ARS; consultar condições da base",
+      "accessed_at": "2026-10-20",
+      "title": "USDA ARS GRIN-Global Taxonomy",
+      "url": "https://npgsweb.ars-grin.gov/gringlobal/taxon/taxonomysearch"
+    },
+    {
+      "id": "fao_stages",
+      "scope": "Quatro estágios gerais; não duração ou fenologia específica",
+      "license": "FAO, consultar publicação",
+      "accessed_at": "2026-10-20",
+      "title": "FAO Irrigation Water Management, Crop water needs",
+      "url": "https://www.fao.org/4/S2022E/s2022e07.htm"
+    },
+    {
+      "id": "fao_application",
+      "scope": "Princípios gerais de aplicação; nenhum limiar quantitativo por cultura extraído",
+      "license": "FAO, consultar documentos ligados",
+      "accessed_at": "2026-10-20",
+      "title": "FAO Pesticide management: Use",
+      "url": "https://www.fao.org/pest-and-pesticide-management/pesticide-risk-reduction/code-conduct/use/en/"
+    },
+    {
+      "id": "embrapa_collector_method",
+      "title": "Embrapa Circular Técnica 167: avaliação com cartões hidrossensíveis",
+      "url": "https://www.infoteca.cnptia.embrapa.br/infoteca/bitstream/doc/1169076/1/CircTec-167.pdf",
+      "accessed_at": "2026-10-20",
+      "license": "Consultar publicação Embrapa; orientação editorial própria sem reproduzir o texto.",
+      "scope": "Referência de método de deposição. Os planos genéricos por grupo são propostas editoriais de amostragem, não protocolos validados por espécie."
+    }
+  ],
+  "stage_profiles": {
+    "field_generic": [
+      "implantacao",
+      "desenvolvimento",
+      "meia_estacao",
+      "fim_ciclo"
+    ],
+    "perennial_generic": [
+      "estabelecimento",
+      "desenvolvimento_vegetativo",
+      "fase_produtiva",
+      "pos_colheita"
+    ]
+  },
+  "quality_profiles": {
+    "unvalidated": {
+      "culture": "Cultura",
+      "coverageMin": null,
+      "coverageTarget": null,
+      "coverageMax": null,
+      "densityMin": null,
+      "densityTarget": null,
+      "densityMax": null,
+      "uniformityCvMax": null,
+      "confirmed": false,
+      "status": "requires_local_calibration",
+      "sources": [
+        "fao_application"
+      ],
+      "limitations": [
+        "Sem limiar universal validado por cultura. Defina alvos em ensaio local para equipamento, produto, alvo e posição do coletor.",
+        "A presença no catálogo não indica produto, dose ou necessidade de aplicação."
+      ],
+      "application_guidance": [
+        "Avaliar deposição e uniformidade com coletores distribuídos no dossel e replicações.",
+        "Registrar equipamento, alvo, volume, condições e calibração."
+      ],
+      "values_origin": "No numeric thresholds supplied: local experimental validation required."
+    }
+  },
+  "crops": [
+    {
+      "key": "soja",
+      "name": "Soja",
+      "scientific_name": "Glycine max",
+      "aliases": [
+        "soybean",
+        "soy"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Soja: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "milho",
+      "name": "Milho",
+      "scientific_name": "Zea mays",
+      "aliases": [
+        "maize",
+        "corn",
+        "milho doce"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Milho: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "arroz",
+      "name": "Arroz",
+      "scientific_name": "Oryza sativa",
+      "aliases": [
+        "rice"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Arroz: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "trigo",
+      "name": "Trigo",
+      "scientific_name": "Triticum aestivum",
+      "aliases": [
+        "wheat"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Trigo: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cevada",
+      "name": "Cevada",
+      "scientific_name": "Hordeum vulgare",
+      "aliases": [
+        "barley"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cevada: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "aveia",
+      "name": "Aveia",
+      "scientific_name": "Avena sativa",
+      "aliases": [
+        "oat",
+        "oats"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Aveia: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "centeio",
+      "name": "Centeio",
+      "scientific_name": "Secale cereale",
+      "aliases": [
+        "rye"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Centeio: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "sorgo",
+      "name": "Sorgo",
+      "scientific_name": "Sorghum bicolor",
+      "aliases": [
+        "sorghum"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Sorgo: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "milheto",
+      "name": "Milheto",
+      "scientific_name": "Cenchrus americanus",
+      "aliases": [
+        "pearl millet",
+        "Pennisetum glaucum"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Milheto: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "triticale",
+      "name": "Triticale",
+      "scientific_name": "Triticosecale spp.",
+      "aliases": [
+        "triticale cereal"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Triticale: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "quinoa",
+      "name": "Quinoa",
+      "scientific_name": "Chenopodium quinoa",
+      "aliases": [
+        "quinua"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Quinoa: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "amaranto",
+      "name": "Amaranto",
+      "scientific_name": "Amaranthus cruentus",
+      "aliases": [
+        "amaranth"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Amaranto: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "trigo_sarraceno",
+      "name": "Trigo-sarraceno",
+      "scientific_name": "Fagopyrum esculentum",
+      "aliases": [
+        "buckwheat"
+      ],
+      "group": "grains",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Trigo-sarraceno: plano sugerido para em dossel formado, separar posições superiores e internas em vez de combinar todas as leituras numa única média.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "feijao",
+      "name": "Feijão-comum",
+      "scientific_name": "Phaseolus vulgaris",
+      "aliases": [
+        "feijao",
+        "common bean",
+        "bean"
+      ],
+      "group": "pulses",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Feijão-comum: plano sugerido para registrar o fechamento do dossel e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "feijao_caupi",
+      "name": "Feijão-caupi",
+      "scientific_name": "Vigna unguiculata",
+      "aliases": [
+        "cowpea",
+        "feijao de corda"
+      ],
+      "group": "pulses",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Feijão-caupi: plano sugerido para registrar o fechamento do dossel e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "ervilha",
+      "name": "Ervilha",
+      "scientific_name": "Pisum sativum",
+      "aliases": [
+        "pea",
+        "peas"
+      ],
+      "group": "pulses",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Ervilha: plano sugerido para registrar o fechamento do dossel e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "lentilha",
+      "name": "Lentilha",
+      "scientific_name": "Lens culinaris",
+      "aliases": [
+        "lentil"
+      ],
+      "group": "pulses",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Lentilha: plano sugerido para registrar o fechamento do dossel e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "grao_de_bico",
+      "name": "Grão-de-bico",
+      "scientific_name": "Cicer arietinum",
+      "aliases": [
+        "chickpea"
+      ],
+      "group": "pulses",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Grão-de-bico: plano sugerido para registrar o fechamento do dossel e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "fava",
+      "name": "Fava",
+      "scientific_name": "Vicia faba",
+      "aliases": [
+        "broad bean",
+        "faba bean"
+      ],
+      "group": "pulses",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Fava: plano sugerido para registrar o fechamento do dossel e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "feijao_mungo",
+      "name": "Feijão-mungo",
+      "scientific_name": "Vigna radiata",
+      "aliases": [
+        "mung bean"
+      ],
+      "group": "pulses",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Feijão-mungo: plano sugerido para registrar o fechamento do dossel e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "amendoim",
+      "name": "Amendoim",
+      "scientific_name": "Arachis hypogaea",
+      "aliases": [
+        "peanut",
+        "groundnut"
+      ],
+      "group": "oilseeds",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Amendoim: plano sugerido para registrar porte e fechamento do dossel e identificar a posição de cada coletor.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "girassol",
+      "name": "Girassol",
+      "scientific_name": "Helianthus annuus",
+      "aliases": [
+        "sunflower"
+      ],
+      "group": "oilseeds",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Girassol: plano sugerido para registrar porte e fechamento do dossel e identificar a posição de cada coletor.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "canola",
+      "name": "Canola",
+      "scientific_name": "Brassica napus",
+      "aliases": [
+        "rapeseed",
+        "colza"
+      ],
+      "group": "oilseeds",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Canola: plano sugerido para registrar porte e fechamento do dossel e identificar a posição de cada coletor.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "gergelim",
+      "name": "Gergelim",
+      "scientific_name": "Sesamum indicum",
+      "aliases": [
+        "sesame"
+      ],
+      "group": "oilseeds",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Gergelim: plano sugerido para registrar porte e fechamento do dossel e identificar a posição de cada coletor.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "linhaca",
+      "name": "Linhaça",
+      "scientific_name": "Linum usitatissimum",
+      "aliases": [
+        "linho",
+        "flax",
+        "linseed"
+      ],
+      "group": "oilseeds",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Linhaça: plano sugerido para registrar porte e fechamento do dossel e identificar a posição de cada coletor.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cartamo",
+      "name": "Cártamo",
+      "scientific_name": "Carthamus tinctorius",
+      "aliases": [
+        "safflower"
+      ],
+      "group": "oilseeds",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cártamo: plano sugerido para registrar porte e fechamento do dossel e identificar a posição de cada coletor.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "mamona",
+      "name": "Mamona",
+      "scientific_name": "Ricinus communis",
+      "aliases": [
+        "castor bean"
+      ],
+      "group": "oilseeds",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Mamona: plano sugerido para registrar porte e fechamento do dossel e identificar a posição de cada coletor.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "mandioca",
+      "name": "Mandioca",
+      "scientific_name": "Manihot esculenta",
+      "aliases": [
+        "cassava",
+        "manioc",
+        "aipim",
+        "macaxeira"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Mandioca: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "batata",
+      "name": "Batata",
+      "scientific_name": "Solanum tuberosum",
+      "aliases": [
+        "potato"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Batata: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "batata_doce",
+      "name": "Batata-doce",
+      "scientific_name": "Ipomoea batatas",
+      "aliases": [
+        "sweet potato"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Batata-doce: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "inhame",
+      "name": "Inhame",
+      "scientific_name": "Dioscorea spp.",
+      "aliases": [
+        "yam"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Inhame: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "taro",
+      "name": "Taro",
+      "scientific_name": "Colocasia esculenta",
+      "aliases": [
+        "taro root"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Taro: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "beterraba",
+      "name": "Beterraba",
+      "scientific_name": "Beta vulgaris",
+      "aliases": [
+        "beet",
+        "beetroot",
+        "beterraba acucareira"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Beterraba: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cenoura",
+      "name": "Cenoura",
+      "scientific_name": "Daucus carota",
+      "aliases": [
+        "carrot"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cenoura: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "nabo",
+      "name": "Nabo",
+      "scientific_name": "Brassica rapa subsp. rapa",
+      "aliases": [
+        "turnip"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Nabo: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "rabanete",
+      "name": "Rabanete",
+      "scientific_name": "Raphanus sativus",
+      "aliases": [
+        "radish"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Rabanete: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "batata_yacon",
+      "name": "Yacon",
+      "scientific_name": "Smallanthus sonchifolius",
+      "aliases": [
+        "yacon",
+        "batata yacon"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Yacon: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "mandioquinha",
+      "name": "Mandioquinha",
+      "scientific_name": "Arracacia xanthorrhiza",
+      "aliases": [
+        "batata baroa",
+        "arracacha"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Mandioquinha: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cebola",
+      "name": "Cebola",
+      "scientific_name": "Allium cepa",
+      "aliases": [
+        "onion"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cebola: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "alho",
+      "name": "Alho",
+      "scientific_name": "Allium sativum",
+      "aliases": [
+        "garlic"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Alho: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "alho_poro",
+      "name": "Alho-poró",
+      "scientific_name": "Allium ampeloprasum var. porrum",
+      "aliases": [
+        "leek"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Alho-poró: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cebolinha",
+      "name": "Cebolinha",
+      "scientific_name": "Allium fistulosum",
+      "aliases": [
+        "welsh onion",
+        "spring onion"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cebolinha: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "alface",
+      "name": "Alface",
+      "scientific_name": "Lactuca sativa",
+      "aliases": [
+        "lettuce"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Alface: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "repolho",
+      "name": "Repolho",
+      "scientific_name": "Brassica oleracea var. capitata",
+      "aliases": [
+        "cabbage"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Repolho: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "couve",
+      "name": "Couve",
+      "scientific_name": "Brassica oleracea var. acephala",
+      "aliases": [
+        "collard",
+        "kale"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Couve: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "brocolis",
+      "name": "Brócolis",
+      "scientific_name": "Brassica oleracea var. italica",
+      "aliases": [
+        "broccoli"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Brócolis: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "couve_flor",
+      "name": "Couve-flor",
+      "scientific_name": "Brassica oleracea var. botrytis",
+      "aliases": [
+        "cauliflower"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Couve-flor: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "espinafre",
+      "name": "Espinafre",
+      "scientific_name": "Spinacia oleracea",
+      "aliases": [
+        "spinach"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Espinafre: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "rucula",
+      "name": "Rúcula",
+      "scientific_name": "Eruca vesicaria",
+      "aliases": [
+        "arugula",
+        "rocket"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Rúcula: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "chicoria",
+      "name": "Chicória",
+      "scientific_name": "Cichorium intybus",
+      "aliases": [
+        "chicory"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Chicória: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "acelga",
+      "name": "Acelga",
+      "scientific_name": "Beta vulgaris var. cicla",
+      "aliases": [
+        "chard",
+        "swiss chard"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Acelga: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "agriao",
+      "name": "Agrião",
+      "scientific_name": "Nasturtium officinale",
+      "aliases": [
+        "watercress"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Agrião: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "tomate",
+      "name": "Tomate",
+      "scientific_name": "Solanum lycopersicum",
+      "aliases": [
+        "tomato"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Tomate: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "pimentao",
+      "name": "Pimentão",
+      "scientific_name": "Capsicum annuum",
+      "aliases": [
+        "bell pepper",
+        "sweet pepper"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Pimentão: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "pimenta",
+      "name": "Pimenta-malagueta",
+      "scientific_name": "Capsicum frutescens",
+      "aliases": [
+        "chili pepper",
+        "malagueta"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Pimenta-malagueta: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "berinjela",
+      "name": "Berinjela",
+      "scientific_name": "Solanum melongena",
+      "aliases": [
+        "eggplant",
+        "aubergine"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Berinjela: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "pepino",
+      "name": "Pepino",
+      "scientific_name": "Cucumis sativus",
+      "aliases": [
+        "cucumber"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Pepino: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "abobora",
+      "name": "Abóbora",
+      "scientific_name": "Cucurbita moschata",
+      "aliases": [
+        "pumpkin",
+        "squash"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Abóbora: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "abobrinha",
+      "name": "Abobrinha",
+      "scientific_name": "Cucurbita pepo",
+      "aliases": [
+        "zucchini",
+        "courgette"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Abobrinha: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "chuchu",
+      "name": "Chuchu",
+      "scientific_name": "Sechium edule",
+      "aliases": [
+        "chayote"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Chuchu: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "quiabo",
+      "name": "Quiabo",
+      "scientific_name": "Abelmoschus esculentus",
+      "aliases": [
+        "okra"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Quiabo: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "aspargo",
+      "name": "Aspargo",
+      "scientific_name": "Asparagus officinalis",
+      "aliases": [
+        "asparagus"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Aspargo: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "alcachofra",
+      "name": "Alcachofra",
+      "scientific_name": "Cynara cardunculus",
+      "aliases": [
+        "artichoke"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Alcachofra: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "melancia",
+      "name": "Melancia",
+      "scientific_name": "Citrullus lanatus",
+      "aliases": [
+        "watermelon"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Melancia: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "melao",
+      "name": "Melão",
+      "scientific_name": "Cucumis melo",
+      "aliases": [
+        "melon"
+      ],
+      "group": "vegetables",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Melão: plano sugerido para registrar porte e espaçamento e comparar coletores no alvo definido, mantendo a orientação de cada cartão.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "morango",
+      "name": "Morango",
+      "scientific_name": "Fragaria x ananassa",
+      "aliases": [
+        "strawberry"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Morango: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "uva",
+      "name": "Uva",
+      "scientific_name": "Vitis vinifera",
+      "aliases": [
+        "grape",
+        "grapes",
+        "videira",
+        "grapevine"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Uva: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "maca",
+      "name": "Maçã",
+      "scientific_name": "Malus domestica",
+      "aliases": [
+        "apple",
+        "macieira"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Maçã: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "pera",
+      "name": "Pera",
+      "scientific_name": "Pyrus communis",
+      "aliases": [
+        "pear"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Pera: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "pessego",
+      "name": "Pêssego",
+      "scientific_name": "Prunus persica",
+      "aliases": [
+        "peach"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Pêssego: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "ameixa",
+      "name": "Ameixa",
+      "scientific_name": "Prunus domestica",
+      "aliases": [
+        "plum"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Ameixa: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "damasco",
+      "name": "Damasco",
+      "scientific_name": "Prunus armeniaca",
+      "aliases": [
+        "apricot"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Damasco: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cereja",
+      "name": "Cereja",
+      "scientific_name": "Prunus avium",
+      "aliases": [
+        "cherry"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cereja: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "laranja",
+      "name": "Laranja",
+      "scientific_name": "Citrus sinensis",
+      "aliases": [
+        "orange",
+        "laranjeira"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Laranja: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "limao",
+      "name": "Limão",
+      "scientific_name": "Citrus limon",
+      "aliases": [
+        "lemon"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Limão: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "limao_taiti",
+      "name": "Limão-taiti",
+      "scientific_name": "Citrus latifolia",
+      "aliases": [
+        "tahiti lime",
+        "persian lime"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Limão-taiti: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "tangerina",
+      "name": "Tangerina",
+      "scientific_name": "Citrus reticulata",
+      "aliases": [
+        "mandarin",
+        "mandarina",
+        "mexerica"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Tangerina: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "banana",
+      "name": "Banana",
+      "scientific_name": "Musa spp.",
+      "aliases": [
+        "banana planta",
+        "plantain"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Banana: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "abacaxi",
+      "name": "Abacaxi",
+      "scientific_name": "Ananas comosus",
+      "aliases": [
+        "pineapple"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Abacaxi: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "manga",
+      "name": "Manga",
+      "scientific_name": "Mangifera indica",
+      "aliases": [
+        "mango"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Manga: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "mamao",
+      "name": "Mamão",
+      "scientific_name": "Carica papaya",
+      "aliases": [
+        "papaya"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Mamão: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "goiaba",
+      "name": "Goiaba",
+      "scientific_name": "Psidium guajava",
+      "aliases": [
+        "guava"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Goiaba: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "maracuja",
+      "name": "Maracujá",
+      "scientific_name": "Passiflora edulis",
+      "aliases": [
+        "passion fruit"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Maracujá: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "abacate",
+      "name": "Abacate",
+      "scientific_name": "Persea americana",
+      "aliases": [
+        "avocado"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Abacate: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "coco",
+      "name": "Coco",
+      "scientific_name": "Cocos nucifera",
+      "aliases": [
+        "coconut"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Coco: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "azeitona",
+      "name": "Oliveira",
+      "scientific_name": "Olea europaea",
+      "aliases": [
+        "olive",
+        "azeitona"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Oliveira: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "figo",
+      "name": "Figo",
+      "scientific_name": "Ficus carica",
+      "aliases": [
+        "fig"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Figo: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "roma",
+      "name": "Romã",
+      "scientific_name": "Punica granatum",
+      "aliases": [
+        "pomegranate"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Romã: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "tamara",
+      "name": "Tâmara",
+      "scientific_name": "Phoenix dactylifera",
+      "aliases": [
+        "date palm",
+        "date fruit"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Tâmara: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "kiwi",
+      "name": "Kiwi",
+      "scientific_name": "Actinidia deliciosa",
+      "aliases": [
+        "kiwifruit"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Kiwi: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "caqui",
+      "name": "Caqui",
+      "scientific_name": "Diospyros kaki",
+      "aliases": [
+        "persimmon"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Caqui: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "acerola",
+      "name": "Acerola",
+      "scientific_name": "Malpighia emarginata",
+      "aliases": [
+        "barbados cherry"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Acerola: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "mirtilo",
+      "name": "Mirtilo",
+      "scientific_name": "Vaccinium corymbosum",
+      "aliases": [
+        "blueberry"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Mirtilo: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "framboesa",
+      "name": "Framboesa",
+      "scientific_name": "Rubus idaeus",
+      "aliases": [
+        "raspberry"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Framboesa: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "amora",
+      "name": "Amora-preta",
+      "scientific_name": "Rubus spp.",
+      "aliases": [
+        "blackberry"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Amora-preta: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "caju",
+      "name": "Caju",
+      "scientific_name": "Anacardium occidentale",
+      "aliases": [
+        "cashew"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Caju: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "castanha_para",
+      "name": "Castanha-do-pará",
+      "scientific_name": "Bertholletia excelsa",
+      "aliases": [
+        "brazil nut",
+        "castanha do brasil"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Castanha-do-pará: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "noz",
+      "name": "Noz",
+      "scientific_name": "Juglans regia",
+      "aliases": [
+        "walnut"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Noz: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "amendoa",
+      "name": "Amêndoa",
+      "scientific_name": "Prunus dulcis",
+      "aliases": [
+        "almond"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Amêndoa: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "pistache",
+      "name": "Pistache",
+      "scientific_name": "Pistacia vera",
+      "aliases": [
+        "pistachio"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Pistache: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "avela",
+      "name": "Avelã",
+      "scientific_name": "Corylus avellana",
+      "aliases": [
+        "hazelnut"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Avelã: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cafe",
+      "name": "Café-arábica",
+      "scientific_name": "Coffea arabica",
+      "aliases": [
+        "coffee",
+        "cafe",
+        "cafe arabica"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Café-arábica: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cafe_robusta",
+      "name": "Café-robusta",
+      "scientific_name": "Coffea canephora",
+      "aliases": [
+        "robusta",
+        "conilon"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Café-robusta: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cacau",
+      "name": "Cacau",
+      "scientific_name": "Theobroma cacao",
+      "aliases": [
+        "cocoa",
+        "cacao"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cacau: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cha",
+      "name": "Chá",
+      "scientific_name": "Camellia sinensis",
+      "aliases": [
+        "tea"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Chá: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "cana",
+      "name": "Cana-de-açúcar",
+      "scientific_name": "Saccharum spp.",
+      "aliases": [
+        "sugarcane",
+        "sugar cane",
+        "cana de acucar",
+        "Saccharum officinarum"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cana-de-açúcar: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "algodao",
+      "name": "Algodão",
+      "scientific_name": "Gossypium hirsutum",
+      "aliases": [
+        "cotton",
+        "algodao herbaceo"
+      ],
+      "group": "industrial",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Algodão: plano sugerido para registrar altura e arquitetura da cultura e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "fumo",
+      "name": "Fumo",
+      "scientific_name": "Nicotiana tabacum",
+      "aliases": [
+        "tobacco",
+        "tabaco"
+      ],
+      "group": "industrial",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Fumo: plano sugerido para registrar altura e arquitetura da cultura e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "seringueira",
+      "name": "Seringueira",
+      "scientific_name": "Hevea brasiliensis",
+      "aliases": [
+        "rubber tree"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Seringueira: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "dende",
+      "name": "Dendê",
+      "scientific_name": "Elaeis guineensis",
+      "aliases": [
+        "oil palm"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Dendê: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "sisal",
+      "name": "Sisal",
+      "scientific_name": "Agave sisalana",
+      "aliases": [
+        "sisal fibre"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Sisal: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "juta",
+      "name": "Juta",
+      "scientific_name": "Corchorus capsularis",
+      "aliases": [
+        "jute"
+      ],
+      "group": "industrial",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Juta: plano sugerido para registrar altura e arquitetura da cultura e comparar as posições-alvo separadamente.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "lupulo",
+      "name": "Lúpulo",
+      "scientific_name": "Humulus lupulus",
+      "aliases": [
+        "hops",
+        "hop"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Lúpulo: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "alfafa",
+      "name": "Alfafa",
+      "scientific_name": "Medicago sativa",
+      "aliases": [
+        "alfalfa",
+        "lucerne"
+      ],
+      "group": "forage",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Alfafa: plano sugerido para registrar altura e densidade da cobertura e manter identificados os estratos amostrados.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "trevo",
+      "name": "Trevo-vermelho",
+      "scientific_name": "Trifolium pratense",
+      "aliases": [
+        "red clover"
+      ],
+      "group": "forage",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Trevo-vermelho: plano sugerido para registrar altura e densidade da cobertura e manter identificados os estratos amostrados.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "capim_elefante",
+      "name": "Capim-elefante",
+      "scientific_name": "Cenchrus purpureus",
+      "aliases": [
+        "elephant grass",
+        "Pennisetum purpureum"
+      ],
+      "group": "forage",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Capim-elefante: plano sugerido para registrar altura e densidade da cobertura e manter identificados os estratos amostrados.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "braquiaria",
+      "name": "Braquiária",
+      "scientific_name": "Urochloa brizantha",
+      "aliases": [
+        "brachiaria",
+        "Brachiaria brizantha"
+      ],
+      "group": "forage",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Braquiária: plano sugerido para registrar altura e densidade da cobertura e manter identificados os estratos amostrados.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "coentro",
+      "name": "Coentro",
+      "scientific_name": "Coriandrum sativum",
+      "aliases": [
+        "coriander",
+        "cilantro"
+      ],
+      "group": "herbs",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Coentro: plano sugerido para registrar porte e espaçamento e identificar os coletores no alvo definido.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "salsa",
+      "name": "Salsa",
+      "scientific_name": "Petroselinum crispum",
+      "aliases": [
+        "parsley"
+      ],
+      "group": "herbs",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Salsa: plano sugerido para registrar porte e espaçamento e identificar os coletores no alvo definido.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "manjericao",
+      "name": "Manjericão",
+      "scientific_name": "Ocimum basilicum",
+      "aliases": [
+        "basil"
+      ],
+      "group": "herbs",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Manjericão: plano sugerido para registrar porte e espaçamento e identificar os coletores no alvo definido.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "hortela",
+      "name": "Hortelã-pimenta",
+      "scientific_name": "Mentha x piperita",
+      "aliases": [
+        "peppermint"
+      ],
+      "group": "herbs",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Hortelã-pimenta: plano sugerido para registrar porte e espaçamento e identificar os coletores no alvo definido.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "alecrim",
+      "name": "Alecrim",
+      "scientific_name": "Salvia rosmarinus",
+      "aliases": [
+        "rosemary",
+        "Rosmarinus officinalis"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Alecrim: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "oregano",
+      "name": "Orégano",
+      "scientific_name": "Origanum vulgare",
+      "aliases": [
+        "oregano"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Orégano: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "pimenta_reino",
+      "name": "Pimenta-do-reino",
+      "scientific_name": "Piper nigrum",
+      "aliases": [
+        "black pepper"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Pimenta-do-reino: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "baunilha",
+      "name": "Baunilha",
+      "scientific_name": "Vanilla planifolia",
+      "aliases": [
+        "vanilla"
+      ],
+      "group": "perennial",
+      "stage_profile": "perennial_generic",
+      "growth_stages": [
+        "estabelecimento",
+        "desenvolvimento_vegetativo",
+        "fase_produtiva",
+        "pos_colheita"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Baunilha: plano sugerido para comparar cartões em posições externas e internas e alturas distintas do dossel, identificando cada posição.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "gengibre",
+      "name": "Gengibre",
+      "scientific_name": "Zingiber officinale",
+      "aliases": [
+        "ginger"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Gengibre: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    },
+    {
+      "key": "curcuma",
+      "name": "Cúrcuma",
+      "scientific_name": "Curcuma longa",
+      "aliases": [
+        "turmeric",
+        "acafrao da terra"
+      ],
+      "group": "roots",
+      "stage_profile": "field_generic",
+      "growth_stages": [
+        "implantacao",
+        "desenvolvimento",
+        "meia_estacao",
+        "fim_ciclo"
+      ],
+      "quality_profile_key": "unvalidated",
+      "taxonomy_status": "informational_reference",
+      "sources": [
+        "fao_crop_list",
+        "grin_taxonomy"
+      ],
+      "stage_limitations": "Rótulos genéricos de navegação; não são escala fenológica validada da espécie.",
+      "sampling_guidance": [
+        "Cúrcuma: plano sugerido para registrar o porte da parte aérea e identificar cada coletor; a imagem não avalia o órgão subterrâneo.",
+        "Defina cultura, alvo, equipamento, posição dos coletores e perfil do ensaio antes de comparar resultados.",
+        "Mantenha imagens e cartões separados por posição/altura, repita a amostragem e confira as marcações descartadas.",
+        "O cartão mede deposição no coletor; não confirma presença de praga, eficácia, produto ou dose."
+      ],
+      "sampling_guidance_status": "editorial_sampling_plan; requires_field_validation",
+      "sampling_sources": [
+        "fao_application",
+        "embrapa_collector_method"
+      ]
+    }
+  ],
+  "limitations": [
+    "Catálogo editorial de identidades agrícolas; não representa todas as espécies, cultivares ou híbridos de um nome comercial.",
+    "Estágios genéricos e perfis sem limites numéricos até validação local.",
+    "Não há doses, pragas ou doenças inferidas por cultura."
+  ]
+}

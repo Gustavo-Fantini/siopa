@@ -1,13 +1,18 @@
 # Deploy web/mobile do SIOPA
 
 ## Objetivo
-Executar o sistema em um servidor único, deixando o celular apenas como cliente web.
+Publicar o servidor de contexto/catálogo e a PWA. A jornada principal já processa
+imagens no aparelho e guarda histórico offline; o APK inclui os arquivos locais.
+Consulte `docs/MOBILE_OFFLINE.md` antes de configurar o cliente Android.
 
 ## Estratégia recomendada
 - Backend FastAPI servindo API e arquivos estáticos.
-- Acesso mobile pelo navegador via mesma rede ou URL pública.
+- Acesso mobile por HTTPS para GPS e service worker; APK usa servidor HTTPS configurável.
 - PWA para instalação opcional na tela inicial.
 - Banco via `DATABASE_URL` para SQLite ou PostgreSQL.
+- Se restringir CORS, permitir também `https://appassets.androidplatform.net` para o APK.
+- Dataset/anotação/treinamento ficam desativados por padrão; habilitar flag e chave
+  administrativa somente quando for utilizar as ferramentas internas.
 - Supervisão operacional com `GET /health/readiness` e `GET /api/v1/system/runtime`.
 
 ## Variáveis principais

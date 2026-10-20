@@ -1,898 +1,388 @@
-"""
-Computer vision pipeline for droplet analysis on water-sensitive paper.
+﻿"""Auditable water-sensitive paper measurements, shared conceptually with offline JS.
 
-The analyzer now prioritizes:
-- detecting the yellow/orange microporous paper region
-- rectifying perspective before any droplet measurement
-- calibrating mm/px from the known paper size
-- filtering noise, edge hits and merged/double droplets
-- optionally reusing the trained classical ML model as a contour classifier
+Counts describe resolvable isolated stains. Physical units require an explicitly
+confirmed collector size or manual scale. No model or database is loaded here.
 """
-
 from __future__ import annotations
 
+import base64
+import math
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
+from PIL import Image, ImageOps
 from loguru import logger
 
 from app.core.config import settings
 from app.core.exceptions import ImageProcessingError
+from app.services.spray_quality import ENGINE_VERSION, evaluate_quality
+from app.services.vision_features import extract_patch_features
+
+
+def _option(options, camel, snake, default=None):
+    return options.get(camel, options.get(snake, default))
+
+
+def _positive(value, default=None):
+    try:
+        value = float(value)
+        return value if math.isfinite(value) and value > 0 else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _polygon_area(points):
+    points = np.asarray(points, dtype=np.float64)
+    return abs(float(np.sum(points[:, 0] * np.roll(points[:, 1], -1) - points[:, 1] * np.roll(points[:, 0], -1)))) / 2
+
+
+def _canonical_corners(points):
+    """Order convex corners cyclically, placing a long edge on the horizontal axis."""
+    points = np.asarray(points, dtype=np.float32)
+    if points.shape != (4, 2) or not np.all(np.isfinite(points)):
+        raise ImageProcessingError("Informe quatro cantos finitos do papel.")
+    center = points.mean(axis=0)
+    points = points[np.argsort(np.arctan2(points[:, 1] - center[1], points[:, 0] - center[0]))]
+    # Pick the upper/left corner then rotate if that edge is the short side.
+    points = np.roll(points, -int(np.argmin(points.sum(axis=1))), axis=0)
+    if np.linalg.norm(points[1] - points[0]) + np.linalg.norm(points[3] - points[2]) < np.linalg.norm(points[2] - points[1]) + np.linalg.norm(points[0] - points[3]):
+        points = np.roll(points, -1, axis=0)
+    if _polygon_area(points) < 16 or not cv2.isContourConvex(points):
+        raise ImageProcessingError("Os cantos nao definem um papel valido.")
+    return points
 
 
 class DropletAnalyzer:
-    """Analyze droplet deposition on water-sensitive paper."""
+    """Deterministic stain segmentation and explicit calibration for phone photos."""
 
     def __init__(self):
         self.model = None
         self.model_loaded = False
-        self.model_metadata: Dict = {}
-
+        self.model_metadata = {}
         self.analysis_long_edge_px = max(512, int(settings.PAPER_ANALYSIS_LONG_EDGE_PX))
-        self.paper_width_mm = max(
-            float(settings.MICROPOROUS_PAPER_WIDTH_MM),
-            float(settings.MICROPOROUS_PAPER_HEIGHT_MM),
-        )
-        self.paper_height_mm = min(
-            float(settings.MICROPOROUS_PAPER_WIDTH_MM),
-            float(settings.MICROPOROUS_PAPER_HEIGHT_MM),
-        )
-        self.paper_aspect_ratio = self.paper_width_mm / max(self.paper_height_mm, 1e-6)
-        self.border_margin_ratio = max(0.0, min(float(settings.PAPER_BORDER_MARGIN_RATIO), 0.15))
-        self.min_droplet_radius_mm = max(0.005, float(settings.MIN_DROPLET_RADIUS_MM))
-        self.max_droplet_radius_mm = max(self.min_droplet_radius_mm, float(settings.MAX_DROPLET_RADIUS_MM))
-        self.protection_radius_factor = 2.0
+        self.paper_width_mm = max(settings.MICROPOROUS_PAPER_WIDTH_MM, settings.MICROPOROUS_PAPER_HEIGHT_MM)
+        self.paper_height_mm = min(settings.MICROPOROUS_PAPER_WIDTH_MM, settings.MICROPOROUS_PAPER_HEIGHT_MM)
+        self.paper_aspect_ratio = self.paper_width_mm / self.paper_height_mm
+        self.border_margin_ratio = settings.PAPER_BORDER_MARGIN_RATIO
+        self.min_droplet_radius_mm = settings.MIN_DROPLET_RADIUS_MM
+        self.max_droplet_radius_mm = settings.MAX_DROPLET_RADIUS_MM
 
-        self.quality_thresholds = {
-            "min_coverage": 10.0,
-            "max_cv": 15.0,
-            "min_density": 20,
-            "max_density": 200,
-        }
-
-    def load_model(self) -> bool:
-        """Load the best active local classifier trained by the annotation flow."""
-        try:
-            from app.services.ml_training import load_active_model
-
-            loaded = load_active_model("segmentation")
-            if not loaded or not loaded.get("model"):
-                logger.info("Nenhum modelo treinado ativo encontrado; usando apenas regras geometricas.")
-                self.model = None
-                self.model_loaded = False
-                self.model_metadata = {}
-                return False
-
-            self.model = loaded["model"]
-            self.model_metadata = loaded.get("metadata", {}) or {}
-            self.model_loaded = True
-            logger.info(
-                "Modelo classico ativo carregado para apoio a filtragem de gotas: {}",
-                self.model_metadata.get("name", "sem_nome"),
-            )
-            return True
-        except Exception as exc:
-            logger.warning(f"Falha ao carregar modelo treinado ativo ({exc}). Seguindo sem ML auxiliar.")
-            self.model = None
-            self.model_loaded = False
-            self.model_metadata = {}
-            return False
-
-    def preprocess_image(self, image: np.ndarray) -> Tuple[np.ndarray, Dict]:
-        """Detect paper, rectify it and prepare a normalized ROI for analysis."""
-        try:
-            if image is None or image.size == 0:
-                raise ImageProcessingError("Imagem vazia ou invalida recebida para pre-processamento")
-
-            original_shape = tuple(int(value) for value in image.shape)
-            paper_points, paper_confidence = self._detect_paper_region(image)
-
-            if paper_points is not None:
-                paper_bgr = self._warp_paper_region(image, paper_points)
-                mm_per_px = self.paper_width_mm / float(paper_bgr.shape[1])
-                metadata = {
-                    "original_shape": original_shape,
-                    "paper_detected": True,
-                    "paper_confidence": round(float(paper_confidence), 3),
-                    "paper_polygon": np.round(paper_points, 2).tolist(),
-                    "paper_dimensions_mm": {
-                        "width": round(self.paper_width_mm, 2),
-                        "height": round(self.paper_height_mm, 2),
-                    },
-                    "analysis_shape": (int(paper_bgr.shape[0]), int(paper_bgr.shape[1])),
-                    "analysis_area_px": int(paper_bgr.shape[0] * paper_bgr.shape[1]),
-                    "analysis_mm_per_px": float(mm_per_px),
-                    "scale_source": "paper_rectification",
-                    "fallback_pixel_to_mm": float(settings.PIXEL_TO_MM),
-                }
-            else:
-                paper_bgr, resize_scale = self._resize_long_edge(image, self.analysis_long_edge_px)
-                mm_per_px = float(settings.PIXEL_TO_MM) / max(resize_scale, 1e-6)
-                metadata = {
-                    "original_shape": original_shape,
-                    "paper_detected": False,
-                    "paper_confidence": 0.0,
-                    "paper_polygon": None,
-                    "paper_dimensions_mm": {
-                        "width": round(float(paper_bgr.shape[1]) * mm_per_px, 2),
-                        "height": round(float(paper_bgr.shape[0]) * mm_per_px, 2),
-                    },
-                    "analysis_shape": (int(paper_bgr.shape[0]), int(paper_bgr.shape[1])),
-                    "analysis_area_px": int(paper_bgr.shape[0] * paper_bgr.shape[1]),
-                    "analysis_mm_per_px": float(mm_per_px),
-                    "scale_source": "fallback_pixel_to_mm",
-                    "fallback_pixel_to_mm": float(settings.PIXEL_TO_MM),
-                }
-
-            analysis_rgb = cv2.cvtColor(paper_bgr, cv2.COLOR_BGR2RGB)
-            enhanced_rgb = self._enhance_contrast(analysis_rgb)
-            metadata["border_margin_px"] = max(
-                2,
-                int(round(min(enhanced_rgb.shape[:2]) * self.border_margin_ratio)),
-            )
-            metadata["analysis_rgb"] = enhanced_rgb
-            metadata["analysis_gray"] = cv2.cvtColor(enhanced_rgb, cv2.COLOR_RGB2GRAY)
-            return enhanced_rgb, metadata
-        except Exception as exc:
-            logger.error(f"Erro no pre-processamento: {exc}")
-            raise ImageProcessingError(f"Falha no pre-processamento da imagem: {exc}")
-
-    def _enhance_contrast(self, image_rgb: np.ndarray) -> np.ndarray:
-        """Improve local contrast without destroying droplet edges."""
-        try:
-            lab = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2LAB)
-            l_channel, a_channel, b_channel = cv2.split(lab)
-            clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
-            l_channel = clahe.apply(l_channel)
-            enhanced = cv2.merge((l_channel, a_channel, b_channel))
-            enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2RGB)
-
-            blurred = cv2.GaussianBlur(enhanced, (0, 0), 1.2)
-            sharpened = cv2.addWeighted(enhanced, 1.15, blurred, -0.15, 0)
-            return sharpened
-        except Exception as exc:
-            logger.warning(f"Falha ao melhorar contraste ({exc}); usando ROI original.")
-            return image_rgb
-
-    def _detect_paper_region(self, image_bgr: np.ndarray) -> Tuple[Optional[np.ndarray], float]:
-        """Find the most likely yellow/orange paper rectangle."""
-        hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
-        lab = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB)
-
-        warm_hsv_mask = cv2.inRange(
-            hsv,
-            np.array([5, 35, 55], dtype=np.uint8),
-            np.array([45, 255, 255], dtype=np.uint8),
-        )
-
-        b_channel = lab[:, :, 2]
-        dynamic_b_threshold = int(max(140, min(220, np.percentile(b_channel, 72))))
-        _, warm_lab_mask = cv2.threshold(b_channel, dynamic_b_threshold, 255, cv2.THRESH_BINARY)
-
-        combined = cv2.bitwise_or(warm_hsv_mask, warm_lab_mask)
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
-        combined = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel, iterations=2)
-        combined = cv2.morphologyEx(combined, cv2.MORPH_OPEN, kernel, iterations=1)
-        combined = cv2.dilate(combined, kernel, iterations=1)
-
-        contours, _ = cv2.findContours(combined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if not contours:
-            return None, 0.0
-
-        image_area = float(image_bgr.shape[0] * image_bgr.shape[1])
-        best_points = None
-        best_score = 0.0
-
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area < image_area * 0.03:
-                continue
-
-            rect = cv2.minAreaRect(contour)
-            width, height = rect[1]
-            if width < 20 or height < 20:
-                continue
-
-            rect_area = max(width * height, 1.0)
-            fill_ratio = float(area / rect_area)
-            long_side = max(width, height)
-            short_side = max(min(width, height), 1.0)
-            aspect_ratio = float(long_side / short_side)
-            aspect_score = 1.0 - min(abs(aspect_ratio - self.paper_aspect_ratio) / self.paper_aspect_ratio, 1.0)
-            area_score = min(area / max(image_area * 0.18, 1.0), 1.2)
-            rectangularity_score = max(0.0, min(fill_ratio / 0.85, 1.0))
-
-            epsilon = 0.03 * cv2.arcLength(contour, True)
-            approx = cv2.approxPolyDP(contour, epsilon, True)
-            if len(approx) == 4:
-                points = approx.reshape(4, 2).astype(np.float32)
-                quadrilateral_bonus = 0.2
-            else:
-                points = cv2.boxPoints(rect).astype(np.float32)
-                quadrilateral_bonus = 0.0
-
-            score = (aspect_score * 3.0) + (rectangularity_score * 2.0) + (area_score * 2.0) + quadrilateral_bonus
-            if score > best_score:
-                best_score = score
-                best_points = points
-
-        if best_points is None:
-            return None, 0.0
-
-        confidence = max(0.0, min(best_score / 6.2, 1.0))
-        return best_points, confidence
-
-    def _warp_paper_region(self, image_bgr: np.ndarray, points: np.ndarray) -> np.ndarray:
-        """Rectify the detected paper into a fixed physical aspect ratio."""
-        ordered = self._order_points(points)
-        target_height = max(64, int(round(self.analysis_long_edge_px / self.paper_aspect_ratio)))
-        target_width = int(self.analysis_long_edge_px)
-        destination = np.array(
-            [
-                [0, 0],
-                [target_width - 1, 0],
-                [target_width - 1, target_height - 1],
-                [0, target_height - 1],
-            ],
-            dtype=np.float32,
-        )
-        matrix = cv2.getPerspectiveTransform(ordered, destination)
-        return cv2.warpPerspective(
-            image_bgr,
-            matrix,
-            (target_width, target_height),
-            flags=cv2.INTER_LANCZOS4,
-            borderMode=cv2.BORDER_REPLICATE,
-        )
+    def load_model(self):
+        """Compatibility hook: measurements deliberately use the portable rules."""
+        return False
 
     @staticmethod
-    def _order_points(points: np.ndarray) -> np.ndarray:
-        """Return points ordered as tl, tr, br, bl."""
-        pts = np.asarray(points, dtype=np.float32)
-        if pts.shape != (4, 2):
-            raise ImageProcessingError("Poligono do papel microporoso invalido")
-
-        ordered = np.zeros((4, 2), dtype=np.float32)
-        point_sum = pts.sum(axis=1)
-        point_diff = np.diff(pts, axis=1).reshape(-1)
-
-        ordered[0] = pts[np.argmin(point_sum)]
-        ordered[2] = pts[np.argmax(point_sum)]
-        ordered[1] = pts[np.argmin(point_diff)]
-        ordered[3] = pts[np.argmax(point_diff)]
-        return ordered
+    def _order_points(points):
+        return _canonical_corners(points)
 
     @staticmethod
-    def _resize_long_edge(image: np.ndarray, target_long_edge: int) -> Tuple[np.ndarray, float]:
-        """Resize an image so the longest side matches the target."""
+    def _resize_long_edge(image, target_long_edge):
         height, width = image.shape[:2]
-        current_long_edge = max(height, width)
-        scale = float(target_long_edge) / max(float(current_long_edge), 1.0)
-        new_size = (max(1, int(round(width * scale))), max(1, int(round(height * scale))))
-        resized = cv2.resize(image, new_size, interpolation=cv2.INTER_LANCZOS4)
+        scale = min(1.0, float(target_long_edge) / max(height, width))
+        resized = cv2.resize(image, (max(1, round(width * scale)), max(1, round(height * scale))), interpolation=cv2.INTER_AREA) if scale < 1 else image.copy()
         return resized, scale
 
-    def segment_droplets(self, image_rgb: np.ndarray, metadata: Dict) -> np.ndarray:
-        """Segment droplets inside the normalized paper ROI."""
-        try:
-            return self._segment_with_opencv(image_rgb, metadata)
-        except Exception as exc:
-            logger.error(f"Erro na segmentacao: {exc}")
-            raise ImageProcessingError(f"Falha na segmentacao de goticulas: {exc}")
+    def _detect_paper_region(self, image_bgr, expected_aspect=None):
+        """Find a complete warm collector; reject low-fill/background candidates."""
+        small, scale = self._resize_long_edge(image_bgr, 640)
+        rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB).astype(np.int16)
+        red, green, blue = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+        warm = ((red > 75) & (green > 55) & (red > blue * 1.25) & (green > blue * 1.10) & (red >= green * 0.85)).astype(np.uint8)
+        warm = cv2.morphologyEx(warm, cv2.MORPH_CLOSE, np.ones((7, 7), dtype=np.uint8))
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(warm, 8)
+        best, confidence, best_score = None, 0.0, 0.0
+        total_area = small.shape[0] * small.shape[1]
+        for component in range(1, count):
+            area = int(stats[component, cv2.CC_STAT_AREA])
+            if area < total_area * 0.04:
+                continue
+            component_mask = (labels == component).astype(np.uint8)
+            contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if not contours:
+                continue
+            hull = cv2.convexHull(max(contours, key=cv2.contourArea)).reshape(-1, 2).astype(float).tolist()
+            # Conservative quadrilateral simplification, identical to the portable engine.
+            while len(hull) > 4:
+                losses = [abs(np.cross(np.array(hull[i]) - hull[i - 1], np.array(hull[(i + 1) % len(hull)]) - hull[i - 1])) for i in range(len(hull))]
+                hull.pop(int(np.argmin(losses)))
+            if len(hull) != 4:
+                continue
+            corners = _canonical_corners(hull)
+            polygon_area = _polygon_area(corners)
+            fill = min(1.0, area / max(polygon_area, 1))
+            sides = [float(np.linalg.norm(corners[(i + 1) % 4] - corners[i])) for i in range(4)]
+            aspect = (sides[0] + sides[2]) / max(sides[1] + sides[3], 1)
+            if min(sides) < 18 or not 1.3 <= aspect <= 5.5 or fill < 0.50:
+                continue
+            edge = any(point[0] <= 1 or point[1] <= 1 or point[0] >= small.shape[1] - 2 or point[1] >= small.shape[0] - 2 for point in corners)
+            aspect_score = max(0.0, 1 - abs(math.log(aspect / (expected_aspect or self.paper_aspect_ratio))) / 1.4)
+            quality = fill * 0.55 + aspect_score * 0.45 - (0.18 if edge else 0)
+            score = quality * min(1, area / (total_area * 0.25))
+            if quality >= 0.62 and score > best_score:
+                best, confidence, best_score = corners / scale, quality, score
+        return best, min(1.0, confidence)
 
-    def _segment_with_opencv(self, image_rgb: np.ndarray, metadata: Dict) -> np.ndarray:
-        """Color and morphology based droplet segmentation."""
-        rgb_uint8 = image_rgb.astype(np.uint8)
-        gray = cv2.cvtColor(rgb_uint8, cv2.COLOR_RGB2GRAY)
-        lab = cv2.cvtColor(rgb_uint8, cv2.COLOR_RGB2LAB)
-        hsv = cv2.cvtColor(rgb_uint8, cv2.COLOR_RGB2HSV)
-        lab_float = lab.astype(np.float32)
-        paper_median_lab = np.median(lab_float.reshape(-1, 3), axis=0)
-        color_distance = np.linalg.norm(lab_float - paper_median_lab, axis=2)
-
-        b_inverse = 255 - lab[:, :, 2]
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        b_inverse = clahe.apply(b_inverse)
-
-        blackhat = cv2.morphologyEx(
-            gray,
-            cv2.MORPH_BLACKHAT,
-            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13)),
-        )
-        blue_dominance = np.clip(
-            rgb_uint8[:, :, 2].astype(np.int16) - rgb_uint8[:, :, 0].astype(np.int16) + 32,
-            0,
-            255,
-        ).astype(np.uint8)
-
-        response = cv2.addWeighted(b_inverse, 0.55, blackhat, 0.45, 0)
-        response = cv2.max(response, blue_dominance)
-        response = cv2.GaussianBlur(response, (5, 5), 0)
-
-        _, otsu_mask = cv2.threshold(response, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        blue_hue_mask = cv2.inRange(
-            hsv,
-            np.array([90, 10, 10], dtype=np.uint8),
-            np.array([175, 255, 235], dtype=np.uint8),
-        )
-        warm_background_mask = cv2.inRange(
-            hsv,
-            np.array([5, 20, 70], dtype=np.uint8),
-            np.array([50, 255, 255], dtype=np.uint8),
-        )
-        distance_mask = (color_distance >= max(18.0, np.percentile(color_distance, 95))).astype(np.uint8) * 255
-        dark_mask = cv2.threshold(
-            gray,
-            int(max(20, min(190, np.percentile(gray, 20)))),
-            255,
-            cv2.THRESH_BINARY_INV,
-        )[1]
-        blue_intensity_mask = (b_inverse >= max(25.0, np.percentile(b_inverse, 94))).astype(np.uint8) * 255
-
-        combined = cv2.bitwise_or(otsu_mask, blue_hue_mask)
-        combined = cv2.bitwise_or(combined, blue_intensity_mask)
-        combined = cv2.bitwise_and(combined, distance_mask)
-        combined = cv2.bitwise_and(combined, cv2.bitwise_or(cv2.bitwise_not(warm_background_mask), dark_mask))
-        combined = cv2.morphologyEx(
-            combined,
-            cv2.MORPH_OPEN,
-            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
-            iterations=1,
-        )
-        combined = cv2.morphologyEx(
-            combined,
-            cv2.MORPH_CLOSE,
-            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)),
-            iterations=1,
-        )
-        combined = cv2.medianBlur(combined, 3)
-
-        border_margin = int(metadata.get("border_margin_px", 2))
-        if border_margin > 0:
-            combined[:border_margin, :] = 0
-            combined[-border_margin:, :] = 0
-            combined[:, :border_margin] = 0
-            combined[:, -border_margin:] = 0
-
-        component_count, labels, stats, _ = cv2.connectedComponentsWithStats(combined, connectivity=8)
-        cleaned = np.zeros_like(combined)
-        max_component_area = combined.shape[0] * combined.shape[1] * 0.08
-        for component_id in range(1, component_count):
-            area = stats[component_id, cv2.CC_STAT_AREA]
-            if 4 <= area <= max_component_area:
-                cleaned[labels == component_id] = 255
-
-        metadata["droplet_response_map"] = response
-        return (cleaned > 0).astype(np.uint8)
-
-    def analyze_droplets(self, mask: np.ndarray, metadata: Dict) -> Dict:
-        """Quantify valid droplets, doubles and noise within the paper ROI."""
-        try:
-            if mask is None or mask.size == 0:
-                raise ImageProcessingError("Mascara binaria vazia recebida para analise")
-
-            if not self.model_loaded:
-                self.load_model()
-
-            contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            response_map = metadata.get("droplet_response_map")
-            gray_image = metadata.get("analysis_gray")
-            mm_per_px = float(metadata.get("analysis_mm_per_px", settings.PIXEL_TO_MM))
-            border_margin = int(metadata.get("border_margin_px", 2))
-            image_h, image_w = mask.shape[:2]
-            paper_area = max(int(metadata.get("analysis_area_px", image_h * image_w)), 1)
-
-            valid_candidates: List[Dict] = []
-            double_candidates: List[Dict] = []
-            edge_candidates: List[Dict] = []
-            rejected_noise = 0
-            rejected_size = 0
-            candidate_count = 0
-
-            for contour in contours:
-                candidate = self._describe_candidate(
-                    contour=contour,
-                    gray_image=gray_image,
-                    response_map=response_map,
-                    mask_shape=mask.shape,
-                    mm_per_px=mm_per_px,
-                    border_margin=border_margin,
-                )
-                if candidate is None:
-                    continue
-
-                candidate_count += 1
-                label = self._classify_candidate(candidate)
-                if label == "valid":
-                    valid_candidates.append(candidate)
-                elif label == "double":
-                    double_candidates.append(candidate)
-                elif label == "edge":
-                    edge_candidates.append(candidate)
-                elif label == "size":
-                    rejected_size += 1
-                else:
-                    rejected_noise += 1
-
-            accepted_for_coverage = valid_candidates + double_candidates
-            total_valid_droplets = len(valid_candidates)
-            double_droplets = len(double_candidates)
-            edge_droplets = len(edge_candidates)
-            duplicated_count = double_droplets
-
-            protection_mask = np.zeros(mask.shape, dtype=np.uint8)
-            theoretical_protection_area = 0.0
-            coverage_contours = [candidate["contour"] for candidate in accepted_for_coverage]
-
-            for candidate in accepted_for_coverage:
-                cx, cy = candidate["centroid"]
-                protection_radius = max(candidate["equivalent_radius_px"] * self.protection_radius_factor, 1.0)
-                cv2.circle(protection_mask, (int(round(cx)), int(round(cy))), int(round(protection_radius)), 1, -1)
-                theoretical_protection_area += np.pi * (protection_radius ** 2)
-
-            if coverage_contours:
-                raw_coverage_mask = np.zeros(mask.shape, dtype=np.uint8)
-                cv2.drawContours(raw_coverage_mask, coverage_contours, -1, 1, thickness=-1)
-                segmented_coverage_area = int(np.count_nonzero(raw_coverage_mask))
-            else:
-                segmented_coverage_area = 0
-
-            protection_area_mask = int(np.count_nonzero(protection_mask))
-            effective_protection_area = max(segmented_coverage_area, protection_area_mask, int(theoretical_protection_area))
-            coverage_percentage = (effective_protection_area / paper_area) * 100.0
-            coverage_percentage *= float(getattr(settings, "DROPLET_COVERAGE_SCALE", 1.0))
-            coverage_percentage = max(0.0, min(100.0, coverage_percentage))
-
-            area_cm2 = (paper_area * mm_per_px * mm_per_px) / 100.0
-            density_per_cm2 = total_valid_droplets / area_cm2 if area_cm2 > 0 else 0.0
-
-            diameters_um = [candidate["diameter_um"] for candidate in valid_candidates]
-            if not diameters_um:
-                diameters_um = [candidate["diameter_um"] for candidate in accepted_for_coverage]
-
-            if len(diameters_um) > 1:
-                mean_diameter = float(np.mean(diameters_um))
-                std_diameter = float(np.std(diameters_um))
-                cv_coefficient = (std_diameter / mean_diameter) * 100.0 if mean_diameter > 0 else 0.0
-            else:
-                mean_diameter = float(diameters_um[0]) if diameters_um else 0.0
-                cv_coefficient = 0.0
-
-            dv50 = float(np.median(diameters_um)) if diameters_um else 0.0
-            droplet_class = self._classify_droplet_size(dv50)
-
-            effective_candidates = max(candidate_count, 1)
-            double_ratio = double_droplets / effective_candidates
-            edge_ratio = edge_droplets / effective_candidates
-            scale_confidence = float(metadata.get("paper_confidence", 0.0)) if metadata.get("paper_detected") else 0.0
-
-            quality_score = self._calculate_quality_score(
-                coverage_percentage,
-                cv_coefficient,
-                density_per_cm2,
-                double_ratio=double_ratio,
-                edge_ratio=edge_ratio,
-                paper_detected=bool(metadata.get("paper_detected")),
-                scale_confidence=scale_confidence,
-            )
-
-            estimated_total_impacts = total_valid_droplets + sum(candidate["peak_count"] for candidate in double_candidates)
-
-            results = {
-                "total_droplets": total_valid_droplets,
-                "valid_droplets": total_valid_droplets,
-                "candidate_droplets": candidate_count,
-                "duplicated_droplets": duplicated_count,
-                "double_droplets": double_droplets,
-                "edge_droplets": edge_droplets,
-                "rejected_noise": rejected_noise,
-                "rejected_by_size": rejected_size,
-                "estimated_total_impacts": int(estimated_total_impacts),
-                "coverage_percentage": round(coverage_percentage, 2),
-                "density_per_cm2": round(density_per_cm2, 2),
-                "cv_coefficient": round(cv_coefficient, 2),
-                "dv50_diameter": round(dv50, 2),
-                "droplet_class": droplet_class,
-                "mean_diameter": round(mean_diameter, 2),
-                "min_diameter": round(float(np.min(diameters_um)), 2) if diameters_um else 0,
-                "max_diameter": round(float(np.max(diameters_um)), 2) if diameters_um else 0,
-                "quality_score": quality_score,
-                "quality_assessment": self._assess_quality(quality_score),
-                "paper_detected": bool(metadata.get("paper_detected")),
-                "paper_confidence": round(scale_confidence, 3),
-                "paper_dimensions_mm": metadata.get("paper_dimensions_mm"),
-                "analysis_scale_mm_per_px": round(mm_per_px, 6),
-                "scale_source": metadata.get("scale_source", "unknown"),
-                "recommendations": self._generate_recommendations(
-                    coverage_percentage,
-                    cv_coefficient,
-                    density_per_cm2,
-                    double_ratio=double_ratio,
-                    paper_detected=bool(metadata.get("paper_detected")),
-                    edge_ratio=edge_ratio,
-                ),
-            }
-
-            logger.info(
-                "Analise concluida: {} gotas validas, {} duplas, {} rejeitadas por ruido",
-                total_valid_droplets,
-                double_droplets,
-                rejected_noise,
-            )
-            return results
-        except Exception as exc:
-            logger.error(f"Erro na analise de goticulas: {exc}")
-            raise ImageProcessingError(f"Falha na analise quantitativa: {exc}")
-
-    def _describe_candidate(
-        self,
-        contour: np.ndarray,
-        gray_image: np.ndarray,
-        response_map: Optional[np.ndarray],
-        mask_shape: Tuple[int, int],
-        mm_per_px: float,
-        border_margin: int,
-    ) -> Optional[Dict]:
-        """Extract geometry, intensity and peak statistics for one contour."""
-        area_px = float(cv2.contourArea(contour))
-        if area_px <= 0:
-            return None
-
-        perimeter = float(cv2.arcLength(contour, True))
-        equivalent_radius_px = float(np.sqrt(area_px / np.pi))
-        radius_mm = equivalent_radius_px * mm_per_px
-        diameter_um = (equivalent_radius_px * 2.0) * mm_per_px * 1000.0
-
-        x, y, width, height = cv2.boundingRect(contour)
-        aspect_ratio = float(max(width, height) / max(min(width, height), 1))
-
-        hull = cv2.convexHull(contour)
-        hull_area = float(cv2.contourArea(hull))
-        solidity = area_px / max(hull_area, 1.0)
-        circularity = (4.0 * np.pi * area_px / (perimeter ** 2)) if perimeter > 0 else 0.0
-
-        moments = cv2.moments(contour)
-        if moments["m00"] <= 0:
-            return None
-        centroid = (moments["m10"] / moments["m00"], moments["m01"] / moments["m00"])
-
-        component_mask = np.zeros(mask_shape, dtype=np.uint8)
-        cv2.drawContours(component_mask, [contour], -1, 255, thickness=-1)
-        local_response = float(cv2.mean(response_map, mask=component_mask)[0]) if response_map is not None else 0.0
-        ml_probability = self._predict_candidate_probability(gray_image, x, y, width, height)
-
-        peak_count = self._count_component_peaks(contour, mask_shape)
-        edge_contact = bool(
-            x <= border_margin
-            or y <= border_margin
-            or (x + width) >= (mask_shape[1] - border_margin)
-            or (y + height) >= (mask_shape[0] - border_margin)
-        )
-
-        return {
-            "contour": contour,
-            "area_px": area_px,
-            "perimeter_px": perimeter,
-            "equivalent_radius_px": equivalent_radius_px,
-            "radius_mm": radius_mm,
-            "diameter_um": diameter_um,
-            "aspect_ratio": aspect_ratio,
-            "solidity": solidity,
-            "circularity": circularity,
-            "bbox": (x, y, width, height),
-            "centroid": centroid,
-            "response_score": local_response,
-            "peak_count": peak_count,
-            "edge_contact": edge_contact,
-            "ml_probability": ml_probability,
+    def preprocess_image(self, image, options=None):
+        options = dict(options or {})
+        if image is None or image.size == 0 or image.ndim != 3 or image.shape[2] != 3:
+            raise ImageProcessingError("Imagem RGB/BGR invalida.")
+        target = max(128, min(2400, int(_option(options, "analysisLongEdgePx", "analysis_long_edge_px", self.analysis_long_edge_px))))
+        width_mm = _positive(_option(options, "paperWidthMm", "paper_width_mm", self.paper_width_mm))
+        height_mm = _positive(_option(options, "paperHeightMm", "paper_height_mm", self.paper_height_mm))
+        if width_mm is None or height_mm is None:
+            raise ImageProcessingError("Dimensoes do papel devem ser finitas e positivas.")
+        width_mm, height_mm = max(width_mm, height_mm), min(width_mm, height_mm)
+        manual = _option(options, "paperCorners", "paper_corners")
+        if manual is not None:
+            manual = [[point["x"], point["y"]] if isinstance(point, dict) else point for point in manual]
+            points, confidence = _canonical_corners(manual), 1.0
+            if np.any(points[:, 0] < 0) or np.any(points[:, 1] < 0) or np.any(points[:, 0] >= image.shape[1]) or np.any(points[:, 1] >= image.shape[0]):
+                raise ImageProcessingError("Os cantos devem ficar dentro da imagem.")
+        else:
+            points, confidence = self._detect_paper_region(image, width_mm / height_mm)
+        confirmed = _option(options, "paperSizeConfirmed", "paper_size_confirmed", False) is True
+        manual_scale_input = _option(options, "mmPerPixel", "mm_per_pixel")
+        manual_scale = _positive(manual_scale_input)
+        if manual_scale_input is not None and manual_scale is None:
+            raise ImageProcessingError("Escala manual deve ser finita e positiva.")
+        warnings = []
+        if points is not None and (not manual_scale or confirmed):
+            sides = [float(np.linalg.norm(points[(i + 1) % 4] - points[i])) for i in range(4)]
+            natural_width = (sides[0] + sides[2]) / 2
+            natural_height = (sides[1] + sides[3]) / 2
+            # Do not invent physical aspect ratio until the user confirms paper dimensions.
+            aspect = width_mm / height_mm if confirmed else natural_width / max(natural_height, 1)
+            out_width = max(2, min(target, round(natural_width)))
+            out_height = max(2, round(out_width / aspect))
+            destination = np.array([[0, 0], [out_width - 1, 0], [out_width - 1, out_height - 1], [0, out_height - 1]], np.float32)
+            matrix = cv2.getPerspectiveTransform(points.astype(np.float32), destination)
+            roi = cv2.warpPerspective(image, matrix, (out_width, out_height), flags=cv2.INTER_LINEAR)
+            mm_per_px = width_mm / out_width if confirmed else None
+            source = "confirmed_paper_dimensions" if confirmed else "unconfirmed_paper"
+        else:
+            roi, resize_scale = self._resize_long_edge(image, target)
+            mm_per_px = manual_scale / resize_scale if manual_scale else None
+            source = "manual_scale" if manual_scale else "uncalibrated"
+            if points is None:
+                warnings.append("Papel nao identificado: selecione os quatro cantos e confirme suas dimensoes.")
+        valid_scale = mm_per_px is not None
+        if not valid_scale:
+            warnings.append("Sem calibracao confirmada: apenas pixels, cobertura e contagem visual; sem mm, densidade ou qualidade conclusiva.")
+        margin_ratio = max(0, min(.12, float(_option(options, "borderMarginRatio", "border_margin_ratio", self.border_margin_ratio))))
+        metadata = {
+            "original_shape": tuple(image.shape), "paper_detected": points is not None,
+            "paper_confidence": round(confidence, 3), "paper_polygon": points.tolist() if points is not None else None,
+            "paper_dimensions_mm": {"width": width_mm, "height": height_mm} if confirmed and points is not None else None,
+            "analysis_shape": roi.shape[:2], "analysis_area_px": roi.shape[0] * roi.shape[1],
+            "analysis_mm_per_px": mm_per_px, "scale_source": source,
+            "border_margin_px": max(1, round(min(roi.shape[:2]) * margin_ratio)),
+            "analysis_rgb": cv2.cvtColor(roi, cv2.COLOR_BGR2RGB), "analysis_bgr": roi,
+            "analysis_gray": cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY), "options": options,
+            "warnings": warnings,
+            "calibration": {"valid": valid_scale, "confirmed": valid_scale, "source": source, "mm_per_px": mm_per_px, "paper_size_confirmed": confirmed, "paper_dimensions_mm": {"width": width_mm, "height": height_mm} if confirmed and points is not None else None},
         }
+        return metadata["analysis_rgb"], metadata
 
-    def _classify_candidate(self, candidate: Dict) -> str:
-        """Label a contour as valid droplet, double, edge or noise."""
-        radius_mm = candidate["radius_mm"]
-        if radius_mm < self.min_droplet_radius_mm or radius_mm > self.max_droplet_radius_mm:
-            return "size"
+    def segment_droplets(self, image_rgb, metadata):
+        return self._segment_with_opencv(image_rgb, metadata)
 
-        circularity = candidate["circularity"]
-        solidity = candidate["solidity"]
-        aspect_ratio = candidate["aspect_ratio"]
-        peak_count = candidate["peak_count"]
-        ml_probability = candidate.get("ml_probability")
+    def _segment_with_opencv(self, image_rgb, metadata):
+        # Purple/blue color change, excluding yellow shadows and neutral dark dirt.
+        rgb = image_rgb.astype(np.float32)
+        maximum, minimum = rgb.max(axis=2), rgb.min(axis=2)
+        delta = maximum - minimum
+        saturation = delta / np.maximum(maximum, 1)
+        red, green, blue = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+        chromatic = np.maximum(blue - red, (red + blue) / 2 - green)
+        mask = (saturation >= .12) & (chromatic >= 15) & (blue > green * 1.05) & (maximum > 25)
+        metadata["segmentation_method"] = "blue_purple_chromatic_v1"
+        return mask.astype(np.uint8)
 
-        if aspect_ratio > 4.0 or solidity < 0.32 or circularity < 0.08:
-            return "noise"
+    @staticmethod
+    def _component_geometry(component, left, top):
+        ys, xs = np.nonzero(component)
+        area = len(xs)
+        center = [float(xs.mean() + left), float(ys.mean() + top)]
+        centered = np.array([xs - xs.mean(), ys - ys.mean()])
+        covariance = centered @ centered.T / max(area, 1)
+        eigenvalues = np.linalg.eigvalsh(covariance)
+        aspect = math.sqrt((float(eigenvalues[1]) + .25) / (float(eigenvalues[0]) + .25))
+        padded = np.pad(component, 1)
+        boundary_edges = sum(np.count_nonzero(component & ~padded[1 + dy:1 + dy + component.shape[0], 1 + dx:1 + dx + component.shape[1]]) for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)])
+        perimeter = boundary_edges * math.pi / 4
+        contours, _ = cv2.findContours(component.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        hull = cv2.convexHull(max(contours, key=cv2.contourArea))
+        hull_area = float(cv2.contourArea(hull))
+        solidity = min(1.0, area / max(hull_area + perimeter / 2 + 1, 1))
+        circularity = min(1.0, 4 * math.pi * area / max(perimeter ** 2, 1))
+        distance = cv2.distanceTransform(np.pad(component.astype(np.uint8), 1), cv2.DIST_L2, 3)[1:-1, 1:-1]
+        peak_mask = ((distance >= max(float(distance.max()) * .72, 1.5)) & component).astype(np.uint8)
+        n, _, stats, _ = cv2.connectedComponentsWithStats(peak_mask, 8)
+        peaks = sum(int(stats[index, cv2.CC_STAT_AREA]) >= 2 for index in range(1, n))
+        return center, aspect, solidity, circularity, max(1, peaks)
 
-        if ml_probability is not None and ml_probability < 0.25 and (circularity < 0.65 or solidity < 0.8):
-            return "noise"
-
-        if candidate["edge_contact"]:
-            return "edge"
-
-        if peak_count >= 2 and (aspect_ratio > 1.15 or circularity < 0.8 or solidity < 0.95):
-            return "double"
-
-        if aspect_ratio > 1.75 and circularity < 0.72:
-            return "double"
-
-        if circularity < 0.28 and solidity < 0.74:
-            return "noise"
-
-        if ml_probability is not None and ml_probability < 0.45 and circularity < 0.55:
-            return "noise"
-
-        return "valid"
-
-    def _count_component_peaks(self, contour: np.ndarray, mask_shape: Tuple[int, int]) -> int:
-        """Estimate how many droplet lobes exist inside a merged component."""
-        component_mask = np.zeros(mask_shape, dtype=np.uint8)
-        cv2.drawContours(component_mask, [contour], -1, 255, thickness=-1)
-        distance = cv2.distanceTransform(component_mask, cv2.DIST_L2, 5)
-        max_distance = float(distance.max())
-        if max_distance <= 0:
-            return 0
-
-        peak_threshold = max(max_distance * 0.62, 1.5)
-        peak_mask = (distance >= peak_threshold).astype(np.uint8)
-        peak_mask = cv2.morphologyEx(
-            peak_mask,
-            cv2.MORPH_OPEN,
-            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
-            iterations=1,
-        )
-        components, _ = cv2.connectedComponents(peak_mask)
-        return max(1, components - 1)
-
-    def _predict_candidate_probability(
-        self,
-        gray_image: Optional[np.ndarray],
-        x: int,
-        y: int,
-        width: int,
-        height: int,
-    ) -> Optional[float]:
-        """Use the trained classical model, when available, to score a contour patch."""
-        if not self.model_loaded or self.model is None or gray_image is None:
-            return None
-
-        margin = 6
-        x1 = max(0, x - margin)
-        y1 = max(0, y - margin)
-        x2 = min(gray_image.shape[1], x + width + margin)
-        y2 = min(gray_image.shape[0], y + height + margin)
-        patch = gray_image[y1:y2, x1:x2]
-        features = self._extract_patch_features(patch)
-        if features is None:
-            return None
-
-        try:
-            feature_row = features.reshape(1, -1)
-            estimator = self.model
-            if isinstance(self.model, dict) and "model" in self.model:
-                scaler = self.model.get("scaler")
-                if scaler is not None:
-                    feature_row = scaler.transform(feature_row)
-                estimator = self.model["model"]
-
-            expected_features = getattr(estimator, "n_features_in_", None)
-            if expected_features is not None and int(expected_features) != feature_row.shape[1]:
-                return None
-
-            if hasattr(estimator, "predict_proba"):
-                probabilities = estimator.predict_proba(feature_row)
-                if probabilities.shape[1] > 1:
-                    return float(probabilities[0][1])
-                return float(probabilities[0][0])
-
-            prediction = estimator.predict(feature_row)
-            return float(prediction[0])
-        except Exception as exc:
-            logger.debug(f"Falha ao aplicar classificador auxiliar na gota candidata: {exc}")
-            return None
-
-    def _extract_patch_features(self, patch: np.ndarray) -> Optional[np.ndarray]:
-        """Mirror the features used by the training pipeline."""
-        try:
-            if patch is None or patch.size == 0:
-                return None
-
-            intensity_mean = np.mean(patch)
-            intensity_std = np.std(patch)
-            laplacian = cv2.Laplacian(patch, cv2.CV_64F)
-            laplacian_var = np.var(laplacian)
-            sobel_x = cv2.Sobel(patch, cv2.CV_64F, 1, 0, ksize=3)
-            sobel_y = cv2.Sobel(patch, cv2.CV_64F, 0, 1, ksize=3)
-            sobel_x_mean = np.mean(np.abs(sobel_x))
-            sobel_y_mean = np.mean(np.abs(sobel_y))
-
-            _, binary = cv2.threshold(patch, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-            if contours:
-                largest = max(contours, key=cv2.contourArea)
-                area = cv2.contourArea(largest)
-                rect = cv2.minAreaRect(largest)
-                width, height = rect[1]
-                aspect_ratio = max(width, height) / max(min(width, height), 1.0)
-                hull = cv2.convexHull(largest)
-                hull_area = cv2.contourArea(hull)
-                solidity = area / max(hull_area, 1.0)
-                perimeter = cv2.arcLength(largest, True)
-                circularity = 4.0 * np.pi * area / (perimeter ** 2) if perimeter > 0 else 0.0
-                bbox_area = max(width, 1.0) * max(height, 1.0)
-                bbox_fill_ratio = area / bbox_area if bbox_area > 0 else 0.0
+    def analyze_droplets(self, mask, metadata):
+        if mask is None or mask.size == 0:
+            raise ImageProcessingError("Mascara vazia.")
+        options = metadata.get("options", {})
+        scale = metadata.get("analysis_mm_per_px")
+        minimum_diameter = _positive(_option(options, "minStainDiameterMm", "min_stain_diameter_mm", getattr(settings, "MIN_STAIN_DIAMETER_MM", .10)), .10)
+        min_pixels = max(4, int(_option(options, "minComponentPixels", "min_component_pixels", 9)))
+        resolution_diameter_px = 2 * math.sqrt(min_pixels / math.pi)
+        effective_minimum_mm = max(minimum_diameter, resolution_diameter_px * scale) if scale else None
+        max_diameter = _positive(_option(options, "maxStainDiameterMm", "max_stain_diameter_mm", 2 * self.max_droplet_radius_mm), 2.5)
+        height, width = mask.shape
+        margin = min(int(metadata.get("border_margin_px", 1)), max(0, min(height, width) // 4))
+        interior = np.zeros_like(mask, dtype=bool)
+        interior[margin:height - margin or height, margin:width - margin or width] = True
+        analysis_area = int(interior.sum())
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(mask.astype(np.uint8), 8)
+        components, diameters, valid_centers = [], [], []
+        grid_rows = max(1, min(12, int(_option(options, "gridRows", "grid_rows", 3))))
+        grid_cols = max(1, min(12, int(_option(options, "gridCols", "grid_cols", 6))))
+        grid = np.zeros((grid_rows, grid_cols), dtype=int)
+        coverage_pixels = 0
+        counts = {key: 0 for key in ("valid", "coalesced", "edge", "tiny", "noise")}
+        overlay = metadata["analysis_bgr"].copy()
+        palette = {"valid": (70, 210, 50), "coalesced": (30, 150, 255), "edge": (255, 190, 40), "tiny": (180, 180, 180), "noise": (130, 65, 200)}
+        for index in range(1, count):
+            left, top, component_width, component_height, area = map(int, stats[index])
+            component = labels[top:top + component_height, left:left + component_width] == index
+            if area < min_pixels:
+                counts["tiny"] += 1
+                continue
+            coverage_pixels += int((component & interior[top:top + component_height, left:left + component_width]).sum())
+            center, aspect, solidity, circularity, peaks = self._component_geometry(component, left, top)
+            diameter_px = 2 * math.sqrt(area / math.pi)
+            diameter_mm = diameter_px * scale if scale else None
+            edge = left <= margin or top <= margin or left + component_width >= width - margin or top + component_height >= height - margin
+            if diameter_mm is not None and diameter_mm < minimum_diameter:
+                label = "tiny"
+            elif edge:
+                label = "edge"
+            elif aspect > 4.0 or solidity < .40:
+                label = "noise"
+            elif peaks >= 2 or aspect > 1.8 or (solidity < .72 and circularity < .60) or (diameter_mm is not None and diameter_mm > max_diameter):
+                label = "coalesced"
             else:
-                area = 0.0
-                aspect_ratio = 1.0
-                solidity = 0.0
-                perimeter = 0.0
-                circularity = 0.0
-                bbox_fill_ratio = 0.0
+                label = "valid"
+            counts[label] += 1
+            record = {"label": label, "bbox": [left, top, component_width, component_height], "centroid": [round(value, 3) for value in center], "area_px": area, "diameter_px": round(diameter_px, 3), "stain_diameter_um": round(diameter_mm * 1000, 3) if diameter_mm else None, "aspect_ratio": round(aspect, 3), "solidity": round(solidity, 3), "circularity": round(circularity, 3), "peak_count": peaks}
+            if len(components) < 5000:
+                components.append(record)
+            if label == "valid":
+                diameters.append(diameter_mm * 1000 if diameter_mm else diameter_px)
+                valid_centers.append(center)
+                row = min(grid_rows - 1, max(0, int((center[1] - margin) * grid_rows / max(height - 2 * margin, 1))))
+                col = min(grid_cols - 1, max(0, int((center[0] - margin) * grid_cols / max(width - 2 * margin, 1))))
+                grid[row, col] += 1
+            cv2.rectangle(overlay, (left, top), (left + component_width - 1, top + component_height - 1), palette[label], 1)
+        density = counts["valid"] / (analysis_area * scale * scale / 100) if scale else None
+        spatial_cv = float(np.std(grid) / np.mean(grid) * 100) if counts["valid"] else None
+        diameter_cv = float(np.std(diameters) / np.mean(diameters) * 100) if diameters else None
+        proxy_dv50 = self._volume_quantile(diameters, .5) if scale and diameters else None
+        warnings = list(metadata.get("warnings", []))
+        if counts["coalesced"]:
+            warnings.append("Manchas coalescidas excluidas da contagem; gotas sobrepostas nao podem ser recuperadas com confianca.")
+        if scale and minimum_diameter / scale < 3:
+            warnings.append("Resolucao insuficiente para o limiar fisico escolhido: fotografe mais perto, sem zoom digital.")
+        if scale and minimum_diameter < resolution_diameter_px * scale:
+            warnings.append("O piso de pixels e maior que o limiar solicitado; o limiar efetivo exibido limita as menores manchas contaveis.")
+        if len(components) >= 5000:
+            warnings.append("Overlay limitado a 5000 componentes; contagens incluem todos.")
+        warnings.append("Diametros sao de manchas; DV50 proxy pondera diametro da mancha ao cubo e nao mede gotas originais sem fator de espalhamento validado.")
+        non_tiny = counts["valid"] + counts["coalesced"] + counts["edge"] + counts["noise"]
+        result = {
+            "engine_version": ENGINE_VERSION, "measurement_status": "calibrated" if scale else "uncalibrated",
+            "total_droplets": counts["valid"], "valid_droplets": counts["valid"], "candidate_droplets": count - 1,
+            "double_droplets": counts["coalesced"], "duplicated_droplets": counts["coalesced"], "coalesced_components": counts["coalesced"],
+            "edge_droplets": counts["edge"], "rejected_noise": counts["noise"], "rejected_by_size": counts["tiny"], "estimated_total_impacts": None,
+            "coverage_percentage": round(coverage_pixels / max(analysis_area, 1) * 100, 3), "coverage_method": "stained_pixels_in_inner_roi",
+            "density_per_cm2": round(density, 3) if density is not None else None,
+            "cv_coefficient": round(spatial_cv, 3) if spatial_cv is not None else None,
+            "diameter_cv_coefficient": round(diameter_cv, 3) if diameter_cv is not None else None,
+            "dv50_diameter": None, "dv50_proxy_um": round(proxy_dv50, 3) if proxy_dv50 else None,
+            "droplet_class": "Nao determinada (manchas, sem fator de espalhamento)",
+            "mean_diameter": round(float(np.mean(diameters)), 3) if scale and diameters else None,
+            "min_diameter": round(min(diameters), 3) if scale and diameters else None, "max_diameter": round(max(diameters), 3) if scale and diameters else None,
+            "stain_diameter": {"unit": "um" if scale else "px", "count": len(diameters), "mean": round(float(np.mean(diameters)), 3) if diameters else None, "median": round(float(np.median(diameters)), 3) if diameters else None, "volume_weighted_proxy_dv50_um": round(proxy_dv50, 3) if proxy_dv50 else None, "spread_factor_applied": False},
+            "spatial_uniformity": {"cv": round(spatial_cv, 3) if spatial_cv is not None else None, "rows": grid_rows, "cols": grid_cols, "counts": grid.tolist(), "method": "population_CV_of_isolated_counts_in_equal_area_cells", "sample_scope": "one_collector"},
+            "coalesced_fraction": counts["coalesced"] / max(non_tiny, 1),
+            "paper_detected": metadata.get("paper_detected", False), "paper_confidence": metadata.get("paper_confidence", 0),
+            "paper_dimensions_mm": metadata.get("paper_dimensions_mm"), "analysis_scale_mm_per_px": scale,
+            "scale_source": metadata.get("scale_source"), "calibration": metadata["calibration"],
+            "analysis_area_px": analysis_area, "min_stain_diameter_mm": minimum_diameter, "min_component_pixels": min_pixels,
+            "effective_min_stain_diameter_mm": round(effective_minimum_mm, 6) if effective_minimum_mm is not None else None,
+            "resolution_min_stain_diameter_px": round(resolution_diameter_px, 6),
+            "overlay": {"width": width, "height": height, "paper_polygon": metadata.get("paper_polygon"), "components": components, "legend": {"valid": "Mancha isolada contada", "coalesced": "Coalescida: excluida", "edge": "Borda: excluida", "tiny": "Abaixo do limiar: excluida", "noise": "Artefato: excluido"}},
+            "warnings": warnings,
+        }
+        if _option(options, "includeOverlayPixels", "include_overlay_pixels", True):
+            ok, encoded = cv2.imencode(".png", overlay)
+            if ok:
+                result["overlay"]["image_data_url"] = "data:image/png;base64," + base64.b64encode(encoded.tobytes()).decode("ascii")
+        profile = _option(options, "profile", "quality_profile", options.get("application_profile"))
+        result["quality"] = evaluate_quality(result, profile)
+        result["quality_score"] = result["quality"]["score"]
+        result["quality_assessment"] = result["quality"]["label"]
+        result["recommendations"] = warnings + ["Indice fuzzy experimental: " + result["quality"]["label"] + ". Nao representa probabilidade de eficacia."]
+        return result
 
-            return np.array(
-                [
-                    intensity_mean,
-                    intensity_std,
-                    laplacian_var,
-                    sobel_x_mean,
-                    sobel_y_mean,
-                    area,
-                    aspect_ratio,
-                    solidity,
-                    perimeter,
-                    circularity,
-                    bbox_fill_ratio,
-                ],
-                dtype=np.float32,
-            )
-        except Exception as exc:
-            logger.debug(f"Nao foi possivel extrair features do patch candidato: {exc}")
-            return None
+    @staticmethod
+    def _volume_quantile(diameters, quantile):
+        ordered = sorted(diameters)
+        threshold = sum(value ** 3 for value in ordered) * quantile
+        cumulative = 0
+        for value in ordered:
+            cumulative += value ** 3
+            if cumulative >= threshold:
+                return value
+        return ordered[-1] if ordered else None
 
-    def _classify_droplet_size(self, dv50: float) -> str:
-        """Map DV50 in microns to a spray quality class."""
-        if dv50 <= 0:
-            return "Indefinida"
-        if 80 <= dv50 < 190:
-            return "Muito fina"
-        if 190 <= dv50 < 280:
-            return "Fina"
-        if 280 <= dv50 < 330:
-            return "Media"
-        if 330 <= dv50 < 400:
-            return "Grossa"
-        if dv50 >= 400:
-            return "Extremamente grossa"
-        return "Ultrafina"
+    def _extract_patch_features(self, patch):
+        return extract_patch_features(patch)
 
-    def _calculate_quality_score(
-        self,
-        coverage: float,
-        cv: float,
-        density: float,
-        double_ratio: float = 0.0,
-        edge_ratio: float = 0.0,
-        paper_detected: bool = True,
-        scale_confidence: float = 1.0,
-    ) -> float:
-        """Score the spray quality from 0 to 100."""
+    def _calculate_quality_score(self, coverage, cv, density, **kwargs):
+        result = evaluate_quality({"coverage_percentage": coverage, "density_per_cm2": density, "spatial_uniformity": {"cv": cv}, "valid_droplets": 100, "coalesced_fraction": kwargs.get("double_ratio", 0), "calibration": {"valid": kwargs.get("paper_detected", True)}})
+        return result["score"] or 0.0
+
+    @staticmethod
+    def _assess_quality(score):
+        return "Excelente" if score >= 80 else "Boa" if score >= 60 else "Regular" if score >= 40 else "Inadequada"
+
+    @staticmethod
+    def _generate_recommendations(coverage, cv, density, **kwargs):
+        messages = []
+        if coverage < 10:
+            messages.append("Cobertura baixa para o perfil experimental; conferir amostragem e protocolo.")
+        if cv > 15:
+            messages.append("Distribuicao espacial irregular; repetir a amostragem em outras posicoes.")
+        if kwargs.get("double_ratio", 0) >= .12:
+            messages.append("Manchas duplas/coalescidas limitam a contagem.")
+        return messages or ["Conferir parametros ideais definidos no protocolo da cultura e do alvo."]
+
+    def process_image(self, image_path: str, options: Optional[Dict] = None):
+        started = time.perf_counter()
         try:
-            cov_opt_low, cov_opt_high = 10.0, 30.0
-            cov_min, cov_max = 3.0, 50.0
-
-            if coverage <= cov_min or coverage >= cov_max:
-                coverage_score = 0.0
-            elif cov_opt_low <= coverage <= cov_opt_high:
-                coverage_score = 40.0
-            elif coverage < cov_opt_low:
-                coverage_score = 40.0 * (coverage - cov_min) / (cov_opt_low - cov_min)
-            else:
-                coverage_score = 40.0 * (cov_max - coverage) / (cov_max - cov_opt_high)
-            coverage_score = max(0.0, min(40.0, coverage_score))
-
-            if cv <= 20.0:
-                cv_score = 30.0
-            elif cv >= 60.0:
-                cv_score = 0.0
-            else:
-                cv_score = 30.0 * (60.0 - cv) / (60.0 - 20.0)
-            cv_score = max(0.0, min(30.0, cv_score))
-
-            dens_opt_low, dens_opt_high = 20.0, 150.0
-            dens_min, dens_max = 5.0, 250.0
-
-            if density <= dens_min or density >= dens_max:
-                density_score = 0.0
-            elif dens_opt_low <= density <= dens_opt_high:
-                density_score = 30.0
-            elif density < dens_opt_low:
-                density_score = 30.0 * (density - dens_min) / (dens_opt_low - dens_min)
-            else:
-                density_score = 30.0 * (dens_max - density) / (dens_max - dens_opt_high)
-            density_score = max(0.0, min(30.0, density_score))
-
-            total_score = coverage_score + cv_score + density_score
-            total_score -= min(18.0, max(0.0, double_ratio) * 30.0)
-            total_score -= min(8.0, max(0.0, edge_ratio) * 16.0)
-            if not paper_detected:
-                total_score -= 8.0
-            total_score -= max(0.0, (1.0 - max(0.0, min(scale_confidence, 1.0))) * 4.0)
-            return round(min(100.0, max(0.0, total_score)), 2)
+            # PIL applies all eight EXIF orientations exactly once, including mirrored photos.
+            with Image.open(image_path) as source:
+                oriented = ImageOps.exif_transpose(source).convert("RGB")
+                if oriented.width * oriented.height > 80_000_000:
+                    raise ImageProcessingError("Imagem excede 80 megapixels; reduza a resolucao.")
+                image = cv2.cvtColor(np.asarray(oriented), cv2.COLOR_RGB2BGR)
+            rgb, metadata = self.preprocess_image(image, options)
+            result = self.analyze_droplets(self.segment_droplets(rgb, metadata), metadata)
+            result["processing_time"] = round(time.perf_counter() - started, 3)
+            result["orientation_applied"] = "EXIF transpose before analysis"
+            return result
+        except ImageProcessingError:
+            raise
         except Exception as exc:
-            logger.warning(f"Erro no calculo de qualidade: {exc}")
-            return 0.0
-
-    def _assess_quality(self, score: float) -> str:
-        """Return a human-readable quality bucket."""
-        if score >= 80:
-            return "Excelente"
-        if score >= 60:
-            return "Boa"
-        if score >= 40:
-            return "Regular"
-        return "Inadequada"
-
-    def _generate_recommendations(
-        self,
-        coverage: float,
-        cv: float,
-        density: float,
-        double_ratio: float = 0.0,
-        paper_detected: bool = True,
-        edge_ratio: float = 0.0,
-    ) -> List[str]:
-        """Generate operational recommendations from the image analysis."""
-        recommendations: List[str] = []
-
-        if not paper_detected:
-            recommendations.append(
-                "O papel microporoso nao foi identificado com alta confianca; fotografe o retangulo amarelo/laranja ocupando mais area da imagem."
-            )
-
-        if coverage < 5.0:
-            recommendations.append("Cobertura muito baixa - revisar volume de calda, altura da barra e velocidade de aplicacao")
-        elif coverage < self.quality_thresholds["min_coverage"]:
-            recommendations.append("Cobertura moderada - avaliar ajuste de volume ou escolha de bicos conforme o alvo")
-
-        if cv > self.quality_thresholds["max_cv"]:
-            recommendations.append("Distribuicao irregular - revisar pressao, uniformidade dos bicos e estabilidade da aplicacao")
-
-        if density < self.quality_thresholds["min_density"]:
-            recommendations.append("Densidade de gotas baixa - reduzir altura de aplicacao ou aumentar pressao")
-        elif density > self.quality_thresholds["max_density"]:
-            recommendations.append("Densidade muito alta - verificar excesso de volume ou risco de coalescencia")
-
-        if double_ratio >= 0.12:
-            recommendations.append("Ha muitas gotas duplas/mescladas - reduzir excesso de deposicao e revisar espectro de gotas")
-
-        if edge_ratio >= 0.1:
-            recommendations.append("Muitas marcas tocaram a borda do papel - reposicione e enquadre melhor a amostra")
-
-        if not recommendations:
-            recommendations.append("Aplicacao dentro dos parametros ideais para a amostra analisada")
-
-        return recommendations
-
-    def process_image(self, image_path: str) -> Dict:
-        """Run the full image processing pipeline."""
-        try:
-            start_time = time.time()
-            image = cv2.imread(image_path)
-            if image is None:
-                raise ImageProcessingError(f"Nao foi possivel carregar a imagem: {image_path}")
-
-            logger.info(f"Processando imagem: {Path(image_path).name}")
-            processed_image, metadata = self.preprocess_image(image)
-            mask = self.segment_droplets(processed_image, metadata)
-            analysis_results = self.analyze_droplets(mask, metadata)
-            analysis_results["processing_time"] = round(time.time() - start_time, 3)
-            return analysis_results
-        except Exception as exc:
-            logger.error(f"Erro no processamento da imagem: {exc}")
-            raise ImageProcessingError(f"Falha no processamento: {exc}")
+            logger.warning("Falha na analise de {}: {}", Path(image_path).name, exc)
+            raise ImageProcessingError(f"Falha no processamento da imagem: {exc}") from exc
 
 
-# Global singleton used by the API routes.
 droplet_analyzer = DropletAnalyzer()

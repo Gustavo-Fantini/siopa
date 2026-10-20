@@ -1,18 +1,13 @@
 {
-  "name": "SIOPA",
+  "id": "./",
+  "name": "SIOPA · Campo offline",
   "short_name": "SIOPA",
-  "description": "Analise mobile de pulverizacao com apoio de imagem, clima e cultura.",
+  "description": "Câmera, análise local de manchas e histórico de pulverização sem internet.",
+  "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f1eadf",
   "theme_color": "#52683b",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
 }

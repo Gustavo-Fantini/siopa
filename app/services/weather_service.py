@@ -12,7 +12,14 @@ This version consolidates multiple providers with:
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta
+import hashlib
+import json
+import math
+import time
+import uuid
+from copy import deepcopy
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import aiohttp
@@ -23,12 +30,104 @@ from app.core.exceptions import APIConnectionError
 from app.utils.logger import log_api_call
 
 
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def validate_coordinates(latitude: float, longitude: float) -> None:
+    if not math.isfinite(latitude) or not math.isfinite(longitude) or not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        raise ValueError("Latitude/longitude fora dos limites WGS84.")
+
+
+class SnapshotCache:
+    """Lazy, atomic JSON snapshots; expired successes survive provider failures.
+
+    Timestamps describe collection time, never the observation/model reference time.
+    Failure backoff is persisted so an offline client does not hammer providers.
+    """
+
+    def __init__(self, cache_dir=None):
+        self.cache_dir = Path(cache_dir or settings.ENVIRONMENT_CACHE_PATH)
+        self._locks = {}
+
+    def _path(self, key):
+        return self.cache_dir / (hashlib.sha256(key.encode("utf-8")).hexdigest() + ".json")
+
+    def read(self, key):
+        try:
+            envelope = json.loads(self._path(key).read_text(encoding="utf-8"))
+            if envelope.get("version") != 1 or envelope.get("key") != key or not isinstance(envelope.get("value"), dict):
+                return None
+            envelope["expires_epoch"] = float(envelope["expires_epoch"])
+            if not math.isfinite(envelope["expires_epoch"]) or not all(isinstance(envelope.get(name), str) for name in ("fetched_at", "expires_at")):
+                return None
+            envelope["retry_after_epoch"] = float(envelope.get("retry_after_epoch", 0))
+            if not math.isfinite(envelope["retry_after_epoch"]):
+                return None
+            return envelope
+        except (OSError, ValueError, TypeError, KeyError):
+            return None
+
+    def _write(self, key, envelope):
+        temporary = None
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            temporary = self._path(key).with_suffix("." + uuid.uuid4().hex + ".tmp")
+            temporary.write_text(json.dumps(envelope, ensure_ascii=False, allow_nan=False), encoding="utf-8")
+            temporary.replace(self._path(key))
+        except (OSError, ValueError, TypeError):
+            logger.warning("Snapshot ambiental não pôde ser persistido; resposta atual preservada.")
+        finally:
+            if temporary and temporary.exists():
+                try:
+                    temporary.unlink()
+                except OSError:
+                    pass
+
+    @staticmethod
+    def _decorate(envelope, cached):
+        value = deepcopy(envelope["value"])
+        value.update(fetched_at=envelope["fetched_at"], expires_at=envelope["expires_at"],
+                     stale=time.time() >= envelope["expires_epoch"], cached=cached)
+        if envelope.get("refresh_failed"):
+            value["refresh_failed"] = True
+            value["refresh_error"] = "Atualização indisponível; exibindo snapshot anterior com data e validade preservadas."
+        return value
+
+    async def resolve(self, key, fetcher, ttl_seconds, unavailable, force_refresh=False, negative_ttl=300):
+        lock = self._locks.setdefault(key, asyncio.Lock())
+        async with lock:
+            now = time.time()
+            old = self.read(key)
+            if not force_refresh and old and max(old["expires_epoch"], old.get("retry_after_epoch", 0)) > now:
+                return self._decorate(old, True)
+            try:
+                value = await fetcher()
+                if not isinstance(value, dict) or value.get("availability") not in {"available", "partial"}:
+                    raise ValueError("Resposta ambiental sem dados utilizáveis.")
+                duration = ttl_seconds
+            except Exception as exc:
+                logger.info("Consulta ambiental indisponível ({})", type(exc).__name__)
+                if old and old["value"].get("availability") in {"available", "partial"}:
+                    old.update(retry_after_epoch=now + negative_ttl, refresh_failed=True)
+                    self._write(key, old)
+                    return self._decorate(old, True)
+                value = deepcopy(unavailable)
+                duration = negative_ttl
+            envelope = {"version": 1, "key": key, "value": value, "fetched_at": utc_now(),
+                        "expires_at": datetime.fromtimestamp(now + duration, timezone.utc).isoformat(),
+                        "expires_epoch": now + duration}
+            self._write(key, envelope)
+            return self._decorate(envelope, False)
+
+
 class WeatherService:
     """Fetch and consolidate weather data from the configured APIs."""
 
     def __init__(self):
-        self.request_timeout = 20
-        self.request_retries = 2
+        self.request_timeout = 8
+        self.request_retries = 0
+        self.cache = SnapshotCache()
         self.source_priority = ["weatherapi", "openweather", "agromonitoring", "climatempo"]
         self.apis = {
             "openweather": {
@@ -61,39 +160,161 @@ class WeatherService:
         }
 
     async def get_current_weather(self, latitude: float, longitude: float) -> Dict:
-        """Return live weather, falling back to mock data if providers fail."""
-        try:
-            return await self._get_weather_from_apis(latitude, longitude)
-        except Exception as exc:
-            logger.warning(f"APIs meteorologicas indisponiveis ({exc}), usando dados mock")
-            return self._get_mock_weather_data(latitude, longitude)
+        """Open-Meteo first, configured legacy providers second, stale snapshot last."""
+        bundle = await self.get_weather_bundle(latitude, longitude)
+        current = deepcopy(bundle["current"])
+        for key in ("fetched_at", "expires_at", "stale", "cached", "refresh_failed", "refresh_error"):
+            if key in bundle:
+                current[key] = bundle[key]
+        if current.get("stale"):
+            current["spray_conditions"] = self._unknown_conditions("Snapshot meteorológico expirado; confirme as condições atuais em campo.")
+        return current
 
-    def _get_mock_weather_data(self, latitude: float, longitude: float) -> Dict:
-        """Deterministic mock weather for local development."""
-        base = {
-            "temperature": 25.0,
-            "humidity": 65.0,
-            "wind_speed": 8.5,
-            "wind_direction": 180,
-            "pressure": 1013.25,
-            "precipitation": 0.0,
-            "weather_condition": "clear",
-            "visibility": 10.0,
-            "uv_index": 6.0,
-            "cloudiness": 15.0,
-            "location": {
-                "name": "Mock location",
-                "region": "Mock region",
-                "country": "Brasil",
-                "lat": latitude,
-                "lon": longitude,
-            },
-            "timestamp": datetime.now().isoformat(),
-            "source": "mock_data",
-            "sources": ["mock_data"],
-        }
-        base["spray_conditions"] = self._analyze_spray_conditions(base)
-        return base
+    @staticmethod
+    def _unavailable_current(latitude, longitude):
+        return {"availability": "unavailable", "temperature": None, "humidity": None,
+                "wind_speed": None, "wind_direction": None, "pressure": None, "precipitation": None,
+                "weather_condition": None, "source": None, "sources": [], "timestamp": None,
+                "location": {"lat": latitude, "lon": longitude},
+                "reason": "Nenhuma fonte meteorológica respondeu com dados válidos.",
+                "spray_conditions": WeatherService._unknown_conditions("Clima indisponível; não é possível avaliar janela de aplicação.")}
+
+    @staticmethod
+    def _unknown_conditions(reason):
+        return {"overall_rating": "unknown", "score": None, "temperature_ok": None,
+                "humidity_ok": None, "wind_ok": None, "precipitation_ok": None,
+                "summary": reason, "recommendations": [reason], "risk_factors": [],
+                "assessment_type": "screening_only"}
+
+    async def get_weather_bundle(self, latitude, longitude, force_refresh=False):
+        validate_coordinates(latitude, longitude)
+        key = f"weather-v3:{latitude:.6f}:{longitude:.6f}"
+        unavailable = {"availability": "unavailable", "current": self._unavailable_current(latitude, longitude),
+                       "forecast": [], "hourly": [], "source": None, "provenance": []}
+
+        async def fetch_bundle():
+            try:
+                async with aiohttp.ClientSession() as session:
+                    return await self._get_open_meteo_bundle(session, latitude, longitude)
+            except Exception:
+                # No averaging with the primary model: retain explicit fallback provenance.
+                results = await asyncio.gather(self._get_weather_from_apis(latitude, longitude),
+                                               self._get_forecast_from_apis(latitude, longitude, 7), return_exceptions=True)
+                current = results[0] if isinstance(results[0], dict) else self._unavailable_current(latitude, longitude)
+                forecast = results[1] if isinstance(results[1], list) else []
+                if current.get("availability") == "unavailable" and not forecast:
+                    raise APIConnectionError("Nenhuma fonte meteorológica disponível")
+                current.setdefault("availability", "available")
+                current["data_kind"] = "external_provider"
+                providers = list(dict.fromkeys(current.get("sources", []) + [row.get("source") for row in forecast if row.get("source")]))
+                provenance = [{"provider": name, "url": self.apis[name]["base_url"],
+                               "license": "Conforme contrato do provedor configurado", "resolution": "Não informada pela resposta normalizada",
+                               "reference_period": current.get("timestamp"), "data_kind": "external_provider"}
+                              for name in providers if name in self.apis]
+                return {"availability": "available" if forecast and current.get("availability") == "available" else "partial",
+                        "current": current, "forecast": forecast, "hourly": [],
+                        "source": current.get("source"), "provenance": provenance}
+
+        bundle = await self.cache.resolve(key, fetch_bundle, max(60, int(settings.ENVIRONMENT_CACHE_TTL_SECONDS)), unavailable, force_refresh)
+        current = bundle["current"]
+        try:
+            reference = datetime.fromisoformat(str(current.get("timestamp") or "").replace("Z", "+00:00"))
+            if reference.tzinfo is None:
+                raise ValueError("Reference timezone missing")
+            age = max(0, (datetime.now(timezone.utc) - reference).total_seconds())
+            current["observation_age_seconds"] = round(age)
+            current["reference_time_known"] = True
+            current["data_stale"] = age > max(3600, int(settings.ENVIRONMENT_CACHE_TTL_SECONDS) * 2)
+        except (TypeError, ValueError, KeyError):
+            current.update(observation_age_seconds=None, reference_time_known=False,
+                           data_stale=current.get("availability") != "unavailable")
+        bundle["stale"] = bundle["stale"] or current["data_stale"]
+        return bundle
+
+    async def _get_open_meteo_bundle(self, session, latitude, longitude):
+        fields = "temperature_2m,relative_humidity_2m,precipitation,weather_code,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m"
+        params = {
+            "latitude": latitude, "longitude": longitude, "current": fields,
+            "hourly": fields + ",precipitation_probability", "forecast_days": 7,
+            "timezone": "UTC", "wind_speed_unit": "kmh", "temperature_unit": "celsius", "precipitation_unit": "mm"}
+        url = settings.OPEN_METEO_API_URL
+        if settings.OPEN_METEO_API_KEY:
+            params["apikey"] = settings.OPEN_METEO_API_KEY
+            if url.startswith("https://api.open-meteo.com/"):
+                url = url.replace("https://api.open-meteo.com/", "https://customer-api.open-meteo.com/", 1)
+        payload = await self._request_json(session, "Open-Meteo", url, params=params)
+        raw = payload.get("current") or {}
+        if not raw.get("time") or any(self._number(raw.get(field)) is None for field in ("temperature_2m", "relative_humidity_2m", "wind_speed_10m", "precipitation")):
+            raise APIConnectionError("Open-Meteo sem condições atuais completas")
+        provenance = {"provider": "Open-Meteo", "url": "https://open-meteo.com/en/docs", "license": "CC BY 4.0; endpoint gratuito para uso não comercial",
+                      "resolution": "Grade de modelo variável por região/modelo; vento a 10 m, temperatura/UR a 2 m",
+                      "reference_period": raw["time"] + "Z", "data_kind": "weather_model",
+                      "limitations": ["Estimativa de modelo; não é estação nem sensor no talhão.", "Confirmar vento e rajadas na altura de aplicação."]}
+
+        def normalize(row, interval=3600):
+            result = {"temperature": self._number(row.get("temperature_2m")), "humidity": self._number(row.get("relative_humidity_2m")),
+                      "wind_speed": self._number(row.get("wind_speed_10m")), "wind_direction": self._number(row.get("wind_direction_10m")),
+                      "wind_gusts": self._number(row.get("wind_gusts_10m")), "pressure": self._number(row.get("surface_pressure")),
+                      "precipitation": self._number(row.get("precipitation")), "precipitation_probability": self._number(row.get("precipitation_probability")),
+                      "weather_code": row.get("weather_code"), "weather_condition": self._weather_code_text(row.get("weather_code")),
+                      "cloudiness": row.get("cloud_cover"), "timestamp": row.get("time", "") + "Z",
+                      "precipitation_interval_seconds": interval, "source": "open_meteo", "sources": ["open_meteo"],
+                      "data_kind": "weather_model", "availability": "available", "provenance": provenance,
+                      "location": {"lat": latitude, "lon": longitude, "grid_latitude": payload.get("latitude"),
+                                   "grid_longitude": payload.get("longitude"), "timezone": "UTC"}}
+            result["spray_conditions"] = self._analyze_spray_conditions(result)
+            return result
+
+        current = normalize(raw, raw.get("interval", 900))
+        hourly_raw = payload.get("hourly") or {}
+        hourly = [normalize({name: values[index] if index < len(values) else None for name, values in hourly_raw.items() if isinstance(values, list)})
+                  for index in range(len(hourly_raw.get("time", [])))]
+        grouped = {}
+        for row in hourly:
+            grouped.setdefault(row["timestamp"][:10], []).append(row)
+        forecast = []
+        for day, rows in sorted(grouped.items()):
+            def values(name):
+                return [float(row[name]) for row in rows if row.get(name) is not None]
+            temps, humidities, winds, rain = (values(name) for name in ("temperature", "humidity", "wind_speed", "precipitation"))
+            if not temps:
+                continue
+            forecast.append({"date": day, "temperature": round(sum(temps) / len(temps), 2), "temperature_min": min(temps),
+                             "temperature_max": max(temps), "humidity": round(sum(humidities) / len(humidities), 2) if humidities else None,
+                             "wind_speed": max(winds) if winds else None, "precipitation": round(sum(rain), 2) if rain else None,
+                             "source": "open_meteo", "availability": "available", "data_kind": "weather_model",
+                             "spray_conditions": self._unknown_conditions("Resumo diário; use a previsão horária para avaliar janelas.")})
+        return {"availability": "available" if forecast else "partial", "current": current, "forecast": forecast,
+                "hourly": hourly, "source": "open_meteo", "provenance": [provenance]}
+
+    @staticmethod
+    def _weather_code_text(code):
+        if code == 0:
+            return "Céu limpo"
+        if code in {1, 2, 3}:
+            return "Parcialmente nublado ou nublado"
+        if code in {45, 48}:
+            return "Nevoeiro"
+        if code in {95, 96, 99}:
+            return "Trovoada"
+        if code is not None:
+            return "Precipitação ou condição WMO " + str(code)
+        return None
+
+    @staticmethod
+    def _number(value, multiplier=1.0):
+        try:
+            result = float(value) * multiplier
+            return result if math.isfinite(result) else None
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _observation_time(epoch):
+        try:
+            return datetime.fromtimestamp(int(epoch), timezone.utc).isoformat()
+        except (TypeError, ValueError, OverflowError, OSError):
+            return None
 
     async def _get_weather_from_apis(self, latitude: float, longitude: float) -> Dict:
         """Fetch current weather concurrently from all enabled providers."""
@@ -189,13 +410,13 @@ class WeatherService:
             "temperature": float(data["main"]["temp"]),
             "humidity": float(data["main"]["humidity"]),
             "pressure": float(data["main"]["pressure"]),
-            "wind_speed": float(data.get("wind", {}).get("speed", 0.0)) * 3.6,
-            "wind_direction": float(data.get("wind", {}).get("deg", 0.0)),
+            "wind_speed": self._number(data.get("wind", {}).get("speed"), 3.6),
+            "wind_direction": self._number(data.get("wind", {}).get("deg")),
             "precipitation": float(data.get("rain", {}).get("1h", 0.0) or data.get("snow", {}).get("1h", 0.0) or 0.0),
             "weather_condition": data.get("weather", [{}])[0].get("description", "indefinido"),
             "visibility": float(data.get("visibility", 0.0)) / 1000.0 if data.get("visibility") else None,
             "cloudiness": float(data.get("clouds", {}).get("all", 0.0)),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": self._observation_time(data.get("dt")),
             "source": "openweather",
             "location": {
                 "name": data.get("name"),
@@ -233,7 +454,7 @@ class WeatherService:
             "visibility": float(current.get("vis_km", 0.0)),
             "uv_index": float(current.get("uv", 0.0)),
             "cloudiness": float(current.get("cloud", 0.0)),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": self._observation_time(current.get("last_updated_epoch")),
             "source": "weatherapi",
             "location": {
                 "name": location.get("name"),
@@ -267,14 +488,14 @@ class WeatherService:
         temperature = self._normalize_temperature(data.get("main", {}).get("temp"))
         return {
             "temperature": temperature,
-            "humidity": float(data.get("main", {}).get("humidity", 0.0)),
-            "pressure": float(data.get("main", {}).get("pressure", 0.0)),
-            "wind_speed": float(data.get("wind", {}).get("speed", 0.0)) * 3.6,
-            "wind_direction": float(data.get("wind", {}).get("deg", 0.0)),
+            "humidity": self._number(data.get("main", {}).get("humidity")),
+            "pressure": self._number(data.get("main", {}).get("pressure")),
+            "wind_speed": self._number(data.get("wind", {}).get("speed"), 3.6),
+            "wind_direction": self._number(data.get("wind", {}).get("deg")),
             "precipitation": float(data.get("rain", {}).get("1h", 0.0) or data.get("rain", {}).get("3h", 0.0) or 0.0),
             "weather_condition": data.get("weather", [{}])[0].get("description", "indefinido"),
             "cloudiness": float(data.get("clouds", {}).get("all", 0.0)),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": self._observation_time(data.get("dt")),
             "source": "agromonitoring",
             "location": {
                 "name": "Agromonitoring field point",
@@ -305,14 +526,14 @@ class WeatherService:
         )
         payload = data.get("data", {})
         return {
-            "temperature": float(payload.get("temperature", 0.0)),
-            "humidity": float(payload.get("humidity", 0.0)),
-            "pressure": float(payload.get("pressure", 0.0)),
-            "wind_speed": float(payload.get("wind_velocity", 0.0)),
-            "wind_direction": 0.0,
-            "precipitation": float(payload.get("rain", 0.0) or 0.0),
+            "temperature": self._number(payload.get("temperature")),
+            "humidity": self._number(payload.get("humidity")),
+            "pressure": self._number(payload.get("pressure")),
+            "wind_speed": self._number(payload.get("wind_velocity")),
+            "wind_direction": None,
+            "precipitation": self._number(payload.get("rain")),
             "weather_condition": payload.get("condition", "indefinido"),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": None,
             "source": "climatempo",
             "location": {
                 "name": payload.get("city"),
@@ -367,16 +588,22 @@ class WeatherService:
             consolidated["weather_condition"] = primary_payload.get("weather_condition", "indefinido")
             consolidated["location"] = primary_payload.get("location")
             consolidated["source"] = primary_source
+            consolidated["timestamp"] = primary_payload.get("timestamp")
         else:
             consolidated["wind_direction"] = 0.0
             consolidated["weather_condition"] = "indefinido"
             consolidated["location"] = None
             consolidated["source"] = "unknown"
 
+        required = [consolidated.get(field) for field in ("temperature", "humidity", "wind_speed", "precipitation")]
+        consolidated["availability"] = "available" if all(value is not None for value in required) else "partial" if any(value is not None for value in required) else "unavailable"
         return consolidated
 
     def _analyze_spray_conditions(self, weather_data: Dict) -> Dict:
         """Translate weather values into an operational spray-readiness summary."""
+        required = ("temperature", "humidity", "wind_speed", "precipitation")
+        if weather_data.get("availability") == "unavailable" or weather_data.get("stale") or any(weather_data.get(key) is None for key in required):
+            return self._unknown_conditions("Clima ausente, incompleto ou expirado; confirme condições em campo.")
         conditions = {
             "overall_rating": "unknown",
             "temperature_ok": False,
@@ -448,36 +675,19 @@ class WeatherService:
         if temp > self.ideal_conditions["temperature"]["max"]:
             conditions["recommendations"].append("Evitar horario mais quente do dia.")
 
+        conditions["assessment_type"] = "screening_only"
+        conditions["limitations"] = ["Faixas genéricas de triagem; não substituem bula, responsável técnico nem medição na altura da barra."]
         return conditions
 
     async def get_weather_forecast(self, latitude: float, longitude: float, days: int = 3) -> List[Dict]:
-        """Return daily forecast data, with mock fallback if providers fail."""
-        try:
-            return await self._get_forecast_from_apis(latitude, longitude, days)
-        except Exception as exc:
-            logger.warning(f"APIs de previsao indisponiveis ({exc}), usando dados mock")
-            return self._get_mock_forecast_data(latitude, longitude, days)
-
-    def _get_mock_forecast_data(self, latitude: float, longitude: float, days: int) -> List[Dict]:
-        """Simple forecast for development and smoke tests."""
-        forecast = []
-        for offset in range(days):
-            date = datetime.now() + timedelta(days=offset)
-            entry = {
-                "date": date.strftime("%Y-%m-%d"),
-                "temperature": 24.0 + offset,
-                "temperature_max": 28.0 + offset,
-                "temperature_min": 18.0 + offset,
-                "humidity": 62.0 + offset,
-                "wind_speed": 7.0 + offset,
-                "precipitation": 0.0 if offset < 2 else 1.2,
-                "precipitation_probability": min(20 + (offset * 10), 80),
-                "weather_condition": "partly_cloudy" if offset % 2 else "clear",
-                "source": "mock_data",
-            }
-            entry["spray_conditions"] = self._analyze_spray_conditions(entry)
-            forecast.append(entry)
-        return forecast
+        """Daily rows from the same cached request; no fabricated forecast."""
+        bundle = await self.get_weather_bundle(latitude, longitude)
+        result = deepcopy(bundle["forecast"][:max(1, min(int(days), 7))])
+        for row in result:
+            row.update(stale=bundle["stale"], fetched_at=bundle["fetched_at"], expires_at=bundle["expires_at"])
+            if bundle["stale"]:
+                row["spray_conditions"] = self._unknown_conditions("Previsão em snapshot expirado.")
+        return result
 
     async def _get_forecast_from_apis(self, latitude: float, longitude: float, days: int) -> List[Dict]:
         """Fetch and merge forecast data."""
@@ -690,7 +900,9 @@ class WeatherService:
     @staticmethod
     def _normalize_temperature(value: Optional[float]) -> float:
         """Convert Kelvin responses to Celsius when needed."""
-        temp = float(value or 0.0)
+        if value is None:
+            return None
+        temp = float(value)
         return round(temp - 273.15, 2) if temp > 120 else round(temp, 2)
 
 

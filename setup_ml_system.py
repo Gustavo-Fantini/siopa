@@ -25,8 +25,8 @@ def check_python_version():
     """Verifica versão do Python"""
     print("🔍 Verificando versão do Python...")
     
-    if sys.version_info < (3, 8):
-        print("❌ Python 3.8+ é necessário")
+    if sys.version_info < (3, 11):
+        print("❌ Python 3.11+ é necessário")
         print(f"   Versão atual: {sys.version}")
         return False
     
@@ -142,10 +142,6 @@ def create_sample_data():
                     architecture="opencv_adaptive_threshold",
                     description="Modelo baseline usando OpenCV para segmentação de gotículas",
                     is_active=True,
-                    accuracy=0.75,
-                    precision=0.70,
-                    recall=0.80,
-                    f1_score=0.75,
                     created_by="system"
                 )
                 
@@ -157,10 +153,6 @@ def create_sample_data():
                     architecture="random_forest",
                     description="Modelo Random Forest para classificação de gotículas",
                     is_active=False,
-                    accuracy=0.85,
-                    precision=0.82,
-                    recall=0.88,
-                    f1_score=0.85,
                     created_by="system"
                 )
                 

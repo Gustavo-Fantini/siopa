@@ -10,8 +10,8 @@ import shutil
 
 def check_python_version():
     """Verifica versão do Python"""
-    if sys.version_info < (3, 8):
-        print("❌ Python 3.8+ é necessário")
+    if sys.version_info < (3, 11):
+        print("❌ Python 3.11+ é necessário")
         sys.exit(1)
     print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor} detectado")
 

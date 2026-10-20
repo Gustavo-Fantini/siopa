@@ -4,6 +4,12 @@
 .env.*.local
 .env.backup.*
 .venv/
+.tools/
+mobile/.gradle/
+mobile/local.properties
+mobile/app/build/
+mobile/build/
+artifacts/
 __pycache__/
 *.pyc
 *.pyo

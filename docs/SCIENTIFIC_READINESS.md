@@ -4,7 +4,7 @@
 Deixar o SIOPA apresentável como projeto acadêmico, reproduzível tecnicamente e sustentável para evolução experimental.
 
 ## Pilares já alinhados
-- Execução centralizada no servidor, com acesso mobile via navegador.
+- Análise no aparelho com PWA/APK offline; servidor fornece contexto e catálogo.
 - Ambiente parametrizado por `.env`.
 - Deploy reproduzível com `Dockerfile` e `docker-compose.yml`.
 - Saúde operacional com `GET /health`, `GET /health/readiness` e `GET /api/v1/system/runtime`.

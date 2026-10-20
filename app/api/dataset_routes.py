@@ -5,6 +5,7 @@ Sistema Inteligente de Pulverização - TCC ETEC
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import JSONResponse, FileResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from pathlib import Path
@@ -14,9 +15,11 @@ from datetime import datetime
 import uuid
 from PIL import Image
 import os
+import math
 
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.access import require_admin_access
 from app.models.database import (
     ImageDataset, ImageAnnotation, ApplicationCondition, 
     AnalysisResult, MLModel, TrainingSession, AnnotationTask,
@@ -26,124 +29,81 @@ from app.services.ml_training import start_training as start_ml_training, get_tr
 from app.core.exceptions import ValidationError, FileProcessingError
 from loguru import logger
 
-router = APIRouter(tags=["Dataset Management"])
+router = APIRouter(tags=["Dataset Management"], dependencies=[Depends(require_admin_access)])
 
 # ==================== UPLOAD E GERENCIAMENTO DE IMAGENS ====================
 
 @router.post("/dataset/upload")
 async def upload_dataset_image(
-    file: UploadFile = File(...),
-    original_filename: str = Form(None),
-    notes: str = Form(None),
-    uploaded_by: str = Form("system"),
-    pixel_to_mm_ratio: float = Form(None),
-    db: Session = Depends(get_db)
+    file: UploadFile = File(...), original_filename: str = Form(None),
+    notes: str = Form(None), uploaded_by: str = Form("system"),
+    pixel_to_mm_ratio: float = Form(None), db: Session = Depends(get_db),
 ):
-    """
-    Upload de nova imagem para o dataset de treinamento
-    """
+    """Persist lossless, oriented RGB pixels so annotation coordinates match metadata."""
+    from io import BytesIO
+    from PIL import ImageOps, UnidentifiedImageError
+    import warnings
+
     file_path = None
+    persisted = False
     try:
-        logger.info(f"Iniciando upload: {file.filename}, content_type: {file.content_type}")
-        
-        # Validações
-        if not file.content_type or not file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="Arquivo deve ser uma imagem")
-        
-        # Lê o conteúdo do arquivo
-        content = await file.read()
-        logger.info(f"Arquivo lido: {len(content)} bytes")
-        
-        # Valida tamanho do arquivo
-        file_size_mb = len(content) / 1024 / 1024
-        max_size_mb = settings.MAX_IMAGE_SIZE / 1024 / 1024
-        
-        if len(content) > settings.MAX_IMAGE_SIZE:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Arquivo muito grande ({file_size_mb:.1f} MB). Máximo: {max_size_mb:.1f} MB"
-            )
-        
-        # Gera nome único
-        file_extension = Path(file.filename).suffix.lower()
-        if not file_extension:
-            file_extension = '.png'  # Default
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        
-        # Diretório de dataset
+        if pixel_to_mm_ratio is not None and (not math.isfinite(pixel_to_mm_ratio) or pixel_to_mm_ratio <= 0):
+            raise HTTPException(422, "Escala deve ser finita e positiva.")
+        content = await file.read(settings.MAX_IMAGE_SIZE + 1)
+        if not content or len(content) > settings.MAX_IMAGE_SIZE:
+            raise HTTPException(400, "Imagem vazia ou acima do limite de upload.")
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", Image.DecompressionBombWarning)
+                with Image.open(BytesIO(content)) as raw:
+                    if raw.width * raw.height > settings.MAX_IMAGE_PIXELS:
+                        raise HTTPException(400, "Imagem acima do limite de pixels.")
+                    raw.verify()
+                with Image.open(BytesIO(content)) as raw:
+                    oriented = ImageOps.exif_transpose(raw)
+                    # Fresh pixels omit EXIF/GPS and maintain the decoder's orientation.
+                    clean = Image.new("RGB", oriented.size, "white")
+                    if "A" in oriented.getbands():
+                        clean.paste(oriented.convert("RGB"), mask=oriented.getchannel("A"))
+                    else:
+                        clean.paste(oriented.convert("RGB"))
+                    width, height = clean.size
+                    output = BytesIO()
+                    clean.save(output, format="PNG")
+                    normalized = output.getvalue()
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
+            raise HTTPException(400, "Imagem inválida ou grande demais.") from exc
+        if len(normalized) > settings.MAX_IMAGE_SIZE * 5:
+            raise HTTPException(400, "Pixels normalizados excedem o limite de armazenamento por imagem.")
+        unique_filename = f"{uuid.uuid4()}.png"
         dataset_dir = Path(settings.DATASET_PATH)
         dataset_dir.mkdir(parents=True, exist_ok=True)
-        
         file_path = dataset_dir / unique_filename
-        logger.info(f"Salvando em: {file_path}")
-        
-        # Salva arquivo
-        with open(file_path, "wb") as buffer:
-            buffer.write(content)
-        
-        logger.info(f"Arquivo salvo, extraindo metadados...")
-        
-        # Extrai metadados da imagem
-        try:
-            with Image.open(file_path) as img:
-                width, height = img.size
-                image_format = img.format.lower() if img.format else 'png'
-        except Exception as img_error:
-            logger.error(f"Erro ao abrir imagem: {img_error}")
-            raise HTTPException(status_code=400, detail=f"Arquivo de imagem inválido: {str(img_error)}")
-        
-        logger.info(f"Metadados: {width}x{height}, formato: {image_format}")
-        logger.info(f"Criando entrada no banco...")
-        
-        # Cria entrada no banco
-        try:
-            image_entry = ImageDataset(
-                filename=unique_filename,
-                original_filename=original_filename or file.filename,
-                file_path=str(file_path),
-                file_size=len(content),
-                image_width=width,
-                image_height=height,
-                image_format=image_format,
-                uploaded_by=uploaded_by,
-                notes=notes,
-                pixel_to_mm_ratio=pixel_to_mm_ratio
-            )
-            
-            db.add(image_entry)
-            db.commit()
-            db.refresh(image_entry)
-            
-            logger.info(f"Imagem {unique_filename} adicionada ao dataset com ID {image_entry.id}")
-            
-        except Exception as db_error:
-            logger.error(f"Erro no banco de dados: {db_error}")
-            db.rollback()
-            raise HTTPException(status_code=500, detail=f"Erro ao salvar no banco: {str(db_error)}")
-        
-        return {
-            "status": "success",
-            "message": "Imagem adicionada ao dataset",
-            "image_id": image_entry.id,
-            "filename": unique_filename,
-            "size": f"{width}x{height}",
-            "file_size_mb": round(len(content) / 1024 / 1024, 2)
-        }
-        
+        file_path.write_bytes(normalized)
+        entry = ImageDataset(
+            filename=unique_filename, original_filename=original_filename or Path(file.filename or "foto").name,
+            file_path=str(file_path), file_size=len(normalized), image_width=width,
+            image_height=height, image_format="png", uploaded_by=uploaded_by, notes=notes,
+            pixel_to_mm_ratio=pixel_to_mm_ratio,
+        )
+        db.add(entry)
+        db.commit()
+        persisted = True
+        db.refresh(entry)
+        return {"status": "success", "message": "Imagem orientada e salva no dataset",
+                "image_id": entry.id, "filename": unique_filename, "size": f"{width}x{height}",
+                "file_size_mb": round(len(normalized) / 1048576, 2),
+                "normalization": "exif_orientation_applied; lossless_decoded_RGB_PNG; metadata_removed"}
     except HTTPException:
+        db.rollback()
         raise
-    except Exception as e:
-        logger.error(f"Erro no upload: {e}")
-        logger.exception("Traceback completo:")
-        
-        # Limpa arquivo se foi criado
-        if 'file_path' in locals() and Path(file_path).exists():
-            try:
-                Path(file_path).unlink()
-            except:
-                pass
-        
-        raise HTTPException(status_code=500, detail=f"Erro ao processar upload: {str(e)}")
+    except Exception:
+        db.rollback()
+        logger.exception("Falha no upload do dataset")
+        raise HTTPException(500, "Não foi possível salvar a imagem no dataset.")
+    finally:
+        if file_path and not persisted:
+            file_path.unlink(missing_ok=True)
 
 @router.get("/dataset/images")
 async def list_dataset_images(
@@ -295,6 +255,7 @@ async def create_annotations(
     image_id: int,
     annotations: List[Dict[str, Any]],
     annotated_by: str = Query("system"),
+    pixel_to_mm_ratio: Optional[float] = Query(None, gt=0),
     db: Session = Depends(get_db)
 ):
     """
@@ -306,6 +267,8 @@ async def create_annotations(
             "x": 100.5,
             "y": 200.3,
             "radius": 5.2,
+            "annotation_type": "droplet",
+            "droplet_size_class": "small",
             "confidence": 0.95,
             "diameter_mm": 0.5
         }
@@ -317,6 +280,28 @@ async def create_annotations(
         if not image:
             raise HTTPException(status_code=404, detail="Imagem não encontrada")
         
+        if pixel_to_mm_ratio is not None and not math.isfinite(pixel_to_mm_ratio):
+            raise HTTPException(422, "Escala deve ser finita e positiva.")
+        if len(annotations) > 30000:
+            raise HTTPException(422, "Quantidade de anotações acima do limite por imagem.")
+        for ann in annotations:
+            for key in ("x", "y", "radius"):
+                value = ann.get(key)
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                    raise HTTPException(422, f"Anotação exige {key} numérico e finito.")
+            if not (0 <= ann["x"] < image.image_width and 0 <= ann["y"] < image.image_height
+                    and 0 < ann["radius"] <= max(image.image_width, image.image_height)):
+                raise HTTPException(422, "Centro ou raio da anotação fora da imagem.")
+            confidence = ann.get("confidence", 1.0)
+            if not isinstance(confidence, (int, float)) or not math.isfinite(confidence) or not 0 <= confidence <= 1:
+                raise HTTPException(422, "Confiança deve ser um número entre 0 e 1.")
+            if ann.get("annotation_type", "droplet") not in {"droplet", "droplet_small", "droplet_medium", "droplet_large", "droplet_duplicate", "dirt", "background"}:
+                raise HTTPException(422, "Tipo de anotação desconhecido.")
+            for key in ("diameter_mm", "intensity_avg", "intensity_std"):
+                value = ann.get(key)
+                if value is not None and (not isinstance(value, (float, int)) or not math.isfinite(value) or value < 0):
+                    raise HTTPException(422, f"{key} inválido na anotação.")
+
         # Remove anotações existentes
         db.query(ImageAnnotation).filter(ImageAnnotation.image_id == image_id).delete()
         
@@ -332,7 +317,15 @@ async def create_annotations(
                 confidence=ann_data.get("confidence", 1.0),
                 diameter_mm=ann_data.get("diameter_mm"),
                 intensity_avg=ann_data.get("intensity_avg"),
-                intensity_std=ann_data.get("intensity_std")
+                intensity_std=ann_data.get("intensity_std"),
+                annotation_type=ann_data.get("annotation_type", "droplet"),
+                droplet_size_class=ann_data.get("droplet_size_class"),
+                shape_type=ann_data.get("shape_type", "circle"),
+                color_profile=ann_data.get("color_profile"),
+                auto_adjusted_radius=bool(ann_data.get("auto_adjusted_radius", False)),
+                source_tool=ann_data.get("source_tool"),
+                mask_points=ann_data.get("mask_points"),
+                is_overlapping=ann_data.get("annotation_type") == "droplet_duplicate",
             )
             
             db.add(annotation)
@@ -340,6 +333,9 @@ async def create_annotations(
         
         # Atualiza status da imagem
         image.is_annotated = len(created_annotations) > 0
+        image.is_validated = False
+        if pixel_to_mm_ratio is not None:
+            image.pixel_to_mm_ratio = pixel_to_mm_ratio
         image.annotation_quality_score = (
             sum(ann.confidence for ann in created_annotations) / len(created_annotations)
             if created_annotations
@@ -385,7 +381,15 @@ async def get_annotations(image_id: int, db: Session = Depends(get_db)):
                     "radius": ann.radius,
                     "area_pixels": ann.area_pixels,
                     "diameter_mm": ann.diameter_mm,
+                    "annotation_type": ann.annotation_type or "droplet",
+                    "droplet_size_class": ann.droplet_size_class,
+                    "shape_type": ann.shape_type or "circle",
+                    "color_profile": ann.color_profile,
+                    "auto_adjusted_radius": ann.auto_adjusted_radius,
+                    "source_tool": ann.source_tool,
+                    "mask_points": ann.mask_points,
                     "confidence": ann.confidence,
+                    "is_overlapping": ann.is_overlapping,
                     "annotated_by": ann.annotated_by,
                     "annotation_date": ann.annotation_date.isoformat(),
                     "review_status": ann.review_status
@@ -424,6 +428,12 @@ async def review_annotation(
         annotation.reviewed_by = reviewed_by
         annotation.review_date = datetime.now()
         annotation.review_notes = notes
+        db.flush()
+        remaining = db.query(ImageAnnotation).filter(
+            ImageAnnotation.image_id == annotation.image_id,
+            ImageAnnotation.review_status != "approved",
+        ).count()
+        annotation.image.is_validated = remaining == 0
         
         db.commit()
         
@@ -437,7 +447,9 @@ async def review_annotation(
         raise
     except Exception as e:
         logger.error(f"Erro na revisão: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        if isinstance(e, ValidationError):
+            raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=500, detail="Não foi possível salvar a revisão.")
 
 # ==================== MODELOS ML ====================
 
@@ -539,37 +551,37 @@ async def start_training_session(
         if len(training_images) < settings.MIN_TRAINING_IMAGES:
             raise ValidationError(f"Mínimo de {settings.MIN_TRAINING_IMAGES} imagens anotadas necessárias")
         
-        # Cria sessão de treinamento
-        session = TrainingSession(
+        split_total = train_split + val_split + test_split
+        if split_total <= 0:
+            raise ValidationError("A soma dos splits de treinamento precisa ser maior que zero")
+
+        dataset_split_config = {
+            "train": train_split / split_total,
+            "validation": val_split / split_total,
+            "test": test_split / split_total,
+            "total_images": len(training_images),
+            "started_by": started_by,
+        }
+
+        result = start_ml_training(
             model_id=model_id,
             session_name=session_name,
             total_epochs=total_epochs,
-            dataset_split_config={
-                "train": train_split,
-                "validation": val_split,
-                "test": test_split,
-                "total_images": len(training_images)
-            },
-            status="pending",
-            started_by=started_by
+            dataset_split_config=dataset_split_config,
+            model_type=model.model_type,
+            architecture=model.architecture,
+            started_by=started_by,
         )
-        
-        db.add(session)
-        db.commit()
-        db.refresh(session)
-        
-        # TODO: Aqui você adicionaria a lógica real de treinamento
-        # Por enquanto, apenas marca como iniciado
-        session.status = "running"
-        session.start_time = datetime.now()
-        db.commit()
-        
-        logger.info(f"Sessão de treinamento {session_name} iniciada")
+
+        if result.get("status") != "success":
+            raise HTTPException(status_code=500, detail=result.get("message", "Falha ao iniciar treinamento"))
+
+        logger.info(f"Sessao de treinamento {session_name} iniciada")
         
         return {
             "status": "success",
             "message": "Treinamento iniciado",
-            "session_id": session.id,
+            "session_id": result["session_id"],
             "session_name": session_name,
             "dataset_size": len(training_images),
             "estimated_duration": "Calculando..."
@@ -638,10 +650,18 @@ async def get_dataset_statistics(db: Session = Depends(get_db)):
         
         if avg_annotations_per_image > 0:
             avg_annotations_per_image = total_annotations / avg_annotations_per_image
+
+        annotation_types = {}
+        for annotation_type, count in db.query(
+            ImageAnnotation.annotation_type,
+            func.count(ImageAnnotation.id)
+        ).group_by(ImageAnnotation.annotation_type).all():
+            annotation_types[annotation_type or "droplet"] = count
         
         stats.update({
             "average_annotations_per_image": round(avg_annotations_per_image, 1),
             "annotation_approval_rate": round((approved_annotations / total_annotations * 100), 1) if total_annotations > 0 else 0,
+            "annotation_types": annotation_types,
             "ready_for_training": len(get_training_ready_images(db))
         })
         
@@ -683,9 +703,14 @@ async def export_dataset(
                 "images": [],
                 "annotations": [],
                 "categories": [
-                    {"id": 1, "name": "droplet", "supercategory": "object"}
+                    {"id": 1, "name": "droplet_small", "supercategory": "droplet"},
+                    {"id": 2, "name": "droplet_medium", "supercategory": "droplet"},
+                    {"id": 3, "name": "droplet_large", "supercategory": "droplet"},
+                    {"id": 4, "name": "droplet_duplicate", "supercategory": "quality_issue"},
+                    {"id": 5, "name": "dirt", "supercategory": "artifact"}
                 ]
             }
+            category_map = {item["name"]: item["id"] for item in export_data["categories"]}
             
             annotation_id = 1
             for img in images:
@@ -700,10 +725,14 @@ async def export_dataset(
                 # Adiciona anotações
                 for ann in img.annotations:
                     if ann.review_status == "approved":
+                        category_name = ann.annotation_type or "droplet"
+                        if category_name == "droplet":
+                            category_name = f"droplet_{ann.droplet_size_class or 'medium'}"
+                        category_id = category_map.get(category_name, category_map["droplet_medium"])
                         export_data["annotations"].append({
                             "id": annotation_id,
                             "image_id": img.id,
-                            "category_id": 1,
+                            "category_id": category_id,
                             "bbox": [
                                 ann.x - ann.radius,
                                 ann.y - ann.radius,
@@ -711,7 +740,7 @@ async def export_dataset(
                                 ann.radius * 2
                             ],
                             "area": ann.area_pixels,
-                            "iscrowd": 0
+                            "iscrowd": 1 if category_name == "droplet_duplicate" else 0
                         })
                         annotation_id += 1
             
@@ -730,6 +759,8 @@ async def export_dataset(
                             "y": ann.y,
                             "radius": ann.radius,
                             "diameter_mm": ann.diameter_mm,
+                            "annotation_type": ann.annotation_type or "droplet",
+                            "droplet_size_class": ann.droplet_size_class,
                             "confidence": ann.confidence
                         })
             

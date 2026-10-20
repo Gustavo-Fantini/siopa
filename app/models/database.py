@@ -67,6 +67,13 @@ class ImageAnnotation(Base):
     diameter_mm = Column(Float, nullable=True)  # diâmetro real em mm
     intensity_avg = Column(Float, nullable=True)  # intensidade média
     intensity_std = Column(Float, nullable=True)  # desvio padrão
+    annotation_type = Column(String(50), default="droplet", index=True)
+    droplet_size_class = Column(String(20), nullable=True)
+    shape_type = Column(String(20), default="circle")
+    color_profile = Column(JSON, nullable=True)
+    auto_adjusted_radius = Column(Boolean, default=False)
+    source_tool = Column(String(50), nullable=True)
+    mask_points = Column(JSON, nullable=True)
     
     # Qualidade da anotação
     confidence = Column(Float, default=1.0)  # confiança do anotador (0-1)
@@ -337,7 +344,7 @@ def create_image_entry(
         image_width=width,
         image_height=height,
         image_format=image_format,
-        **{k: v for k, v in kwargs.items() if hasattr(ImageDataset, k)}
+        **{k: v for k, v in kwargs.items() if hasattr(ImageDataset, k) and k != 'original_filename'}
     )
 
 def create_annotation(
@@ -365,10 +372,11 @@ def create_annotation(
 
 def get_training_ready_images(db_session) -> List[ImageDataset]:
     """
-    Retorna imagens prontas para treinamento (atualmente: todas as anotadas)
+    Retorna apenas imagens anotadas e revisadas para treinamento.
     """
     return db_session.query(ImageDataset).filter(
-        ImageDataset.is_annotated == True
+        ImageDataset.is_annotated == True,
+        ImageDataset.is_validated == True,
     ).all()
 
 def get_model_performance_summary(db_session, model_id: int) -> Dict:

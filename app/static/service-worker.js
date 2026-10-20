@@ -1,72 +1,24 @@
-const CACHE_NAME = "siopa-shell-v2";
-
-function getBasePath() {
-    const scopeUrl = new URL(self.registration.scope);
-    return scopeUrl.pathname.endsWith("/") ? scopeUrl.pathname.slice(0, -1) : scopeUrl.pathname;
-}
-
-function withBase(path) {
-    const basePath = getBasePath();
-    if (path === "/") {
-        return `${basePath}/`;
-    }
-
-    return `${basePath}${path}`;
-}
-
-function getCoreAssets() {
-    return [
-        "/",
-        "/static/app.css",
-        "/static/app.js",
-        "/static/annotation.html",
-        "/manifest.webmanifest",
-        "/icon.svg",
-    ].map(withBase);
-}
-
-self.addEventListener("install", (event) => {
-    event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(getCoreAssets())));
-    self.skipWaiting();
+"use strict";
+const CACHE_NAME = "siopa-offline-v3-1";
+const base = new URL("./", self.registration.scope);
+const coreAssets = ["", "static/app.css", "static/app.js", "static/offline-store.js", "static/analysis-engine.js", "static/analysis-worker.js", "static/crops.json", "manifest.webmanifest", "icon.svg"].map(path => new URL(path, base).href);
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(coreAssets)).then(() => self.skipWaiting()));
 });
-
-self.addEventListener("activate", (event) => {
-    event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
-        )
-    );
-    self.clients.claim();
+self.addEventListener("activate", event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("siopa-") && key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
-
-self.addEventListener("fetch", (event) => {
-    if (event.request.method !== "GET") {
-        return;
-    }
-
-    const requestUrl = new URL(event.request.url);
-    if (requestUrl.origin !== self.location.origin || requestUrl.pathname.includes("/api/")) {
-        return;
-    }
-
-    if (event.request.mode === "navigate") {
-        event.respondWith(
-            fetch(event.request).catch(() => caches.match(withBase("/")))
-        );
-        return;
-    }
-
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-
-            return fetch(event.request).then((response) => {
-                const responseClone = response.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-                return response;
-            });
-        })
-    );
+self.addEventListener("message", event => {
+  if (event.data?.type !== "CHECK_OFFLINE" || !event.ports?.[0]) return;
+  event.waitUntil(caches.open(CACHE_NAME).then(async cache => {
+    const available = await Promise.all(coreAssets.map(url => cache.match(url)));
+    event.ports[0].postMessage({ ready: available.every(Boolean), version: CACHE_NAME });
+  }));
+});
+self.addEventListener("fetch", event => {
+  const request = event.request, url = new URL(request.url);
+  if (request.method !== "GET" || url.origin !== base.origin || url.pathname.includes("/api/")) return;
+  const appNavigation = request.mode === "navigate" && [base.pathname, `${base.pathname}index.html`].includes(url.pathname);
+  if (appNavigation) { event.respondWith(caches.open(CACHE_NAME).then(async cache => (await cache.match(base.href)) || fetch(request))); return; }
+  if (coreAssets.includes(url.href)) event.respondWith(caches.open(CACHE_NAME).then(async cache => (await cache.match(request)) || fetch(request)));
 });

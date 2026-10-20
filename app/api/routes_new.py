@@ -1,425 +1,326 @@
-"""
-Rotas principais da API para análise, clima e recomendações.
-"""
+"""Public analysis and versioned offline packages; network data is optional."""
 
+import asyncio
+import hashlib
+import json
+import math
 import time
 import uuid
+import warnings
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from loguru import logger
 from PIL import Image, UnidentifiedImageError
+from starlette.concurrency import run_in_threadpool
 
+from app.core.access import require_admin_access
 from app.core.config import settings
-from app.core.exceptions import APIConnectionError, ImageProcessingError, ValidationError
+from app.core.exceptions import ImageProcessingError, ValidationError
 from app.core.runtime import build_runtime_report
 from app.models.image_analysis import droplet_analyzer
 from app.services.agriculture_service import agriculture_service
+from app.services.agrofit_service import agrofit_service
+from app.services.crop_catalog import crop_catalog
+from app.services.environmental_service import environmental_service
 from app.services.recommendation_service import recommendation_service
+from app.services.spray_quality import ENGINE_VERSION, SCREENING_PROFILE, evaluate_quality
 from app.services.weather_service import weather_service
 
 router = APIRouter()
+_started = time.monotonic()
+_stats = {"completed": 0, "failed": 0, "processing_seconds": 0.0}
 
 
-def _validate_coordinates(latitude: float, longitude: float):
-    """Valida coordenadas geográficas."""
-    if not (-90 <= latitude <= 90):
-        raise ValidationError(f"Latitude inválida: {latitude}. Deve estar entre -90 e 90")
+def _validate_coordinates(latitude, longitude):
+    if latitude is None and longitude is None:
+        return
+    if latitude is None or longitude is None:
+        raise ValidationError("Informe latitude e longitude juntas, ou deixe ambas vazias.")
+    if not math.isfinite(latitude) or not -90 <= latitude <= 90:
+        raise ValidationError("Latitude inválida; use um número entre -90 e 90.")
+    if not math.isfinite(longitude) or not -180 <= longitude <= 180:
+        raise ValidationError("Longitude inválida; use um número entre -180 e 180.")
 
-    if not (-180 <= longitude <= 180):
-        raise ValidationError(f"Longitude inválida: {longitude}. Deve estar entre -180 e 180")
 
-
-async def _save_temp_upload(file: UploadFile, prefix: str = "") -> Path:
-    """Valida e persiste temporariamente um upload de imagem."""
-    filename = Path(file.filename or "imagem").name
-    content = await file.read()
-
-    if not content:
-        raise ValidationError("Arquivo vazio")
-
-    if len(content) > settings.MAX_IMAGE_SIZE:
-        raise ValidationError(
-            f"Arquivo muito grande ({len(content) / 1024 / 1024:.1f} MB). "
-            f"Máximo permitido: {settings.max_upload_size_mb:.1f} MB"
-        )
-
+def _verify_image(content):
     try:
-        Image.open(BytesIO(content)).verify()
-    except (UnidentifiedImageError, OSError) as exc:
-        raise ValidationError(f"Arquivo de imagem inválido: {exc}")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(BytesIO(content)) as image:
+                if image.width * image.height > settings.MAX_IMAGE_PIXELS:
+                    raise ValidationError("Imagem excede o limite de pixels; reduza a resolução da foto.")
+                image_format = image.format
+                if image_format not in {"JPEG", "PNG", "WEBP", "BMP", "TIFF"}:
+                    raise ValidationError("Use uma foto JPEG, PNG, WebP, BMP ou TIFF.")
+                image.verify()
+                return {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp", "BMP": ".bmp", "TIFF": ".tiff"}[image_format]
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
+        raise ValidationError("Imagem inválida ou grande demais para análise.") from exc
 
-    if file.content_type and not file.content_type.startswith("image/"):
-        raise ValidationError("Arquivo deve ser uma imagem")
 
-    temp_path = Path(settings.TEMP_UPLOAD_PATH) / f"{prefix}{uuid.uuid4().hex}_{filename}"
-    temp_path.parent.mkdir(parents=True, exist_ok=True)
-    temp_path.write_bytes(content)
-    return temp_path
+async def _save_temp_upload(file: UploadFile, prefix=""):
+    content = await file.read(settings.MAX_IMAGE_SIZE + 1)
+    if not content or len(content) > settings.MAX_IMAGE_SIZE:
+        raise ValidationError(f"Envie uma imagem não vazia de até {settings.max_upload_size_mb} MB.")
+    suffix = await run_in_threadpool(_verify_image, content)
+    path = Path(settings.TEMP_UPLOAD_PATH) / f"{prefix}{uuid.uuid4().hex}{suffix}"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    await run_in_threadpool(path.write_bytes, content)
+    return path
+
+
+def _profile(raw):
+    if not raw:
+        return None
+    if len(raw) > 8192:
+        raise ValidationError("Perfil de avaliação grande demais.")
+    try:
+        value = json.loads(raw, parse_constant=lambda _: (_ for _ in ()).throw(ValueError()))
+    except (ValueError, TypeError) as exc:
+        raise ValidationError("Perfil de avaliação deve ser um objeto JSON válido.") from exc
+    if not isinstance(value, dict):
+        raise ValidationError("Perfil de avaliação deve ser um objeto JSON.")
+    fields = ("coverageMin", "coverageTarget", "coverageMax", "densityMin", "densityTarget", "densityMax", "uniformityCvMax")
+    for name in fields:
+        number = value.get(name)
+        if isinstance(number, bool) or not isinstance(number, (int, float)) or not math.isfinite(number):
+            raise ValidationError(f"Informe o parâmetro numérico finito {name} no perfil.")
+    if not (0 <= value["coverageMin"] < value["coverageTarget"] < value["coverageMax"] <= 100
+            and 0 <= value["densityMin"] < value["densityTarget"] < value["densityMax"] <= 100000
+            and 0 < value["uniformityCvMax"] <= 10000):
+        raise ValidationError("Perfil exige mínimo < alvo < máximo e CV máximo positivo.")
+    value["confirmed"] = value.get("confirmed") is True
+    return value
+
+
+def _no_environment():
+    return {"availability": "not_requested", "weather": {"current": None, "forecast": [], "availability": "unavailable"},
+            "soil": {"availability": "unavailable", "properties": {}},
+            "terrain": {"availability": "unavailable", "elevation_m": None},
+            "provenance": [], "fetched_at": None, "expires_at": None, "stale": False}
 
 
 @router.get("/health")
 async def health_check():
-    """
-    Endpoint de verificação de saúde do sistema.
-    """
-    return {
-        "status": "healthy",
-        "version": settings.APP_VERSION,
-        "message": "Sistema Inteligente de Pulverização operacional",
-        "services": {
-            "image_analysis": "active",
-            "weather_api": "active",
-            "agriculture_api": "active",
-            "recommendation_engine": "active",
-        },
-        "timestamp": time.time(),
-    }
+    return {"status": "healthy", "version": settings.APP_VERSION, "engine_version": ENGINE_VERSION,
+            "external_providers": "checked_on_request", "timestamp": time.time()}
 
 
 @router.get("/client/config")
 async def get_client_config():
-    """
-    Configuração pública consumida pelas interfaces web/mobile.
-    """
-    return {
-        "app_name": settings.APP_NAME,
-        "app_version": settings.APP_VERSION,
-        "root_path": settings.ROOT_PATH,
-        "public_base_url": settings.PUBLIC_BASE_URL,
-        "max_upload_size_mb": settings.max_upload_size_mb,
-        "pwa_enabled": settings.ENABLE_PWA,
-        "supported_crops": agriculture_service.get_supported_crops(),
-        "routes": {
-            "analyze_image": f"{settings.ROOT_PATH}/api/v1/analyze-image" if settings.ROOT_PATH else "/api/v1/analyze-image",
-            "annotation": f"{settings.ROOT_PATH}/static/annotation.html" if settings.ROOT_PATH else "/static/annotation.html",
-            "docs": f"{settings.ROOT_PATH}/docs" if settings.ROOT_PATH else "/docs",
-        },
-    }
+    base = settings.ROOT_PATH
+    return {"app_name": settings.APP_NAME, "app_version": settings.APP_VERSION, "engine_version": ENGINE_VERSION,
+            "root_path": base, "public_base_url": settings.PUBLIC_BASE_URL,
+            "max_upload_size_mb": settings.max_upload_size_mb, "pwa_enabled": settings.ENABLE_PWA,
+            "local_analysis": True, "dataset_enabled": settings.ENABLE_DATASET_API,
+            "supported_crops": crop_catalog.list_crops(),
+            "routes": {"analyze_image": f"{base}/api/v1/analyze-image", "bootstrap": f"{base}/api/v1/offline/bootstrap",
+                       "annotation": f"{base}/static/annotation.html", "docs": f"{base}/docs"}}
+
+
+@router.get("/offline/bootstrap")
+async def offline_bootstrap(latitude: Optional[float] = None, longitude: Optional[float] = None):
+    """Only catalogue/context are synchronized. No image is needed or uploaded."""
+    try:
+        _validate_coordinates(latitude, longitude)
+        metadata = crop_catalog.metadata()
+        crops = crop_catalog.list_crops()
+        digest = hashlib.sha256(json.dumps({"crops": crops, "metadata": metadata}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+        environment = await environmental_service.get_context(latitude, longitude) if latitude is not None else _no_environment()
+        return {**metadata, "schema_version": 1, "generated_at": datetime.now(timezone.utc).isoformat(),
+                "catalog_version": digest, "engine_version": ENGINE_VERSION, "crops": crops,
+                "quality_profiles": {**metadata["quality_profiles"], "experimental-screening": SCREENING_PROFILE},
+                "environment": environment,
+                "paper_defaults": {"paperWidthMm": settings.MICROPOROUS_PAPER_WIDTH_MM,
+                                   "paperHeightMm": settings.MICROPOROUS_PAPER_HEIGHT_MM,
+                                   "paperSizeConfirmed": False, "minStainDiameterMm": settings.MIN_STAIN_DIAMETER_MM},
+                "capabilities": {"offline_analysis": True, "offline_history": True, "local_crop_catalog": True,
+                                 "dataset_api": settings.ENABLE_DATASET_API,
+                                 "pesticide_dosage_inference": False, "server_receives_photos_for_sync": False}}
+    except ValidationError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.get("/environment/{latitude}/{longitude}")
+async def get_environment(latitude: float, longitude: float):
+    try:
+        _validate_coordinates(latitude, longitude)
+        return await environmental_service.get_context(latitude, longitude)
+    except ValidationError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.get("/crops")
+async def get_crops():
+    return {**crop_catalog.metadata(), "crops": crop_catalog.list_crops()}
 
 
 @router.post("/analyze-image")
 async def analyze_image(
-    file: UploadFile = File(...),
-    latitude: float = Form(...),
-    longitude: float = Form(...),
-    crop_type: str = Form(...),
-    growth_stage: Optional[str] = Form(None),
-    target_problem: Optional[str] = Form(None),
+    file: UploadFile = File(...), latitude: Optional[float] = Form(None), longitude: Optional[float] = Form(None),
+    crop_type: str = Form("soja"), growth_stage: Optional[str] = Form(None), target_problem: Optional[str] = Form(None),
+    paper_width_mm: float = Form(76.0, gt=0, le=1000), paper_height_mm: float = Form(26.0, gt=0, le=1000),
+    paper_size_confirmed: bool = Form(False), min_stain_diameter_mm: float = Form(0.10, gt=0, le=10),
+    quality_profile: Optional[str] = Form(None),
 ):
-    """
-    Analisa imagem de papel microporoso e gera recomendações.
-    """
     temp_path = None
     try:
-        logger.info(f"Iniciando análise de imagem para cultura: {crop_type}")
         _validate_coordinates(latitude, longitude)
+        options = {"paperWidthMm": paper_width_mm, "paperHeightMm": paper_height_mm,
+                   "paperSizeConfirmed": paper_size_confirmed, "minStainDiameterMm": min_stain_diameter_mm,
+                   "profile": _profile(quality_profile)}
+        if not crop_catalog.get_crop(crop_type):
+            raise ValidationError("Cultura não encontrada no catálogo local.")
         temp_path = await _save_temp_upload(file)
-
-        analysis_results = droplet_analyzer.process_image(str(temp_path))
-        weather_data = await weather_service.get_current_weather(latitude, longitude)
-        agriculture_data = await agriculture_service.get_crop_info(
-            crop_type,
-            growth_stage,
-            latitude,
-            longitude,
+        context_task = environmental_service.get_context(latitude, longitude) if latitude is not None else asyncio.sleep(0, result=_no_environment())
+        analysis, environment = await asyncio.gather(
+            run_in_threadpool(droplet_analyzer.process_image, str(temp_path), options=options), context_task,
         )
-        recommendations = await recommendation_service.get_pesticide_recommendation(
-            analysis_results=analysis_results,
-            latitude=latitude,
-            longitude=longitude,
-            crop_type=crop_type,
-            growth_stage=growth_stage,
+        crop = await agriculture_service.get_crop_info(crop_type, growth_stage)
+        current_weather = (environment.get("weather") or {}).get("current") or {}
+        advice = recommendation_service.build_recommendation(
+            analysis, crop_type, growth_stage, target_problem, current_weather, crop, environment.get("soil"),
         )
-
-        return {
-            "status": "success",
-            "message": "Análise concluída com sucesso",
-            "analysis": analysis_results,
-            "weather": weather_data,
-            "agriculture": agriculture_data,
-            "recommendations": recommendations,
-            "metadata": {
-                "crop_type": crop_type,
-                "growth_stage": growth_stage,
-                "target_problem": target_problem,
-                "coordinates": {"latitude": latitude, "longitude": longitude},
-                "processing_time": analysis_results.get("processing_time", 0),
-                "timestamp": time.time(),
-            },
-        }
+        _stats["completed"] += 1
+        _stats["processing_seconds"] += analysis.get("processing_time", 0)
+        return {"status": "success", "message": "Deposição analisada; confira a calibração e as marcações.",
+                "analysis": analysis, "environment": environment, "weather": current_weather,
+                "agriculture": crop, "recommendations": advice,
+                "metadata": {"crop_type": crop_type, "growth_stage": growth_stage, "target_problem": target_problem,
+                             "coordinates": {"latitude": latitude, "longitude": longitude}, "engine_version": ENGINE_VERSION,
+                             "timestamp": datetime.now(timezone.utc).isoformat()}}
     except ValidationError as exc:
-        logger.error(f"Erro de validação: {exc}")
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(400, str(exc)) from exc
     except ImageProcessingError as exc:
-        logger.error(f"Erro no processamento de imagem: {exc}")
-        raise HTTPException(status_code=422, detail=str(exc))
-    except APIConnectionError as exc:
-        logger.error(f"Erro de conexão com APIs externas: {exc}")
-        raise HTTPException(status_code=503, detail=str(exc))
-    except Exception as exc:
-        logger.error(f"Erro interno: {exc}")
-        raise HTTPException(status_code=500, detail=f"Erro interno: {str(exc)}")
+        _stats["failed"] += 1
+        raise HTTPException(422, str(exc)) from exc
+    except Exception:
+        _stats["failed"] += 1
+        logger.exception("Falha na análise de imagem")
+        raise HTTPException(500, "Não foi possível concluir a análise.")
     finally:
-        if temp_path and temp_path.exists():
-            temp_path.unlink()
+        if temp_path:
+            temp_path.unlink(missing_ok=True)
 
 
 @router.post("/test-analysis")
 async def test_analysis(file: UploadFile = File(...)):
-    """
-    Endpoint de teste simplificado para análise de imagem.
-    """
-    temp_path = None
-    try:
-        logger.info(f"Teste de análise iniciado - arquivo: {file.filename}")
-        temp_path = await _save_temp_upload(file, prefix="test_")
-        analysis_results = droplet_analyzer.process_image(str(temp_path))
-
-        return {
-            "status": "success",
-            "message": "Análise de teste concluída",
-            "analysis": analysis_results,
-            "test_info": {
-                "filename": file.filename,
-                "processing_time": analysis_results.get("processing_time", 0),
-            },
-        }
-    except ValidationError as exc:
-        logger.error(f"Erro de validação no teste: {exc}")
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        logger.error(f"Erro no teste de análise: {exc}")
-        raise HTTPException(status_code=500, detail=f"Erro interno: {str(exc)}")
-    finally:
-        if temp_path and temp_path.exists():
-            temp_path.unlink()
+    # An uncalibrated upload can count candidates but cannot assert physical units.
+    return await analyze_image(file, None, None, "soja", None, None, 76.0, 26.0, False, 0.10, None)
 
 
 @router.get("/weather/{latitude}/{longitude}")
 async def get_weather_info(latitude: float, longitude: float):
-    """
-    Obtém informações meteorológicas para coordenadas específicas.
-    """
     try:
         _validate_coordinates(latitude, longitude)
-        weather_data = await weather_service.get_current_weather(latitude, longitude)
-
-        return {
-            "status": "success",
-            "weather": weather_data,
-            "coordinates": {"latitude": latitude, "longitude": longitude},
-        }
+        return {"status": "success", "weather": await weather_service.get_current_weather(latitude, longitude)}
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        logger.error(f"Erro ao obter dados meteorológicos: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.get("/weather/forecast/{latitude}/{longitude}")
-async def get_weather_forecast(latitude: float, longitude: float, days: int = 3):
-    """
-    Obtém previsão meteorológica para os próximos dias.
-    """
+async def get_weather_forecast(latitude: float, longitude: float, days: int = Query(3, ge=1, le=7)):
     try:
         _validate_coordinates(latitude, longitude)
-        forecast = await weather_service.get_weather_forecast(latitude, longitude, days)
-        return {
-            "status": "success",
-            "forecast": forecast,
-            "coordinates": {"latitude": latitude, "longitude": longitude},
-            "days": days,
-        }
+        return {"status": "success", "days": days, "forecast": await weather_service.get_weather_forecast(latitude, longitude, days)}
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        logger.error(f"Erro ao obter previsão meteorológica: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.get("/agriculture/{crop_type}")
-async def get_agriculture_info(
-    crop_type: str,
-    growth_stage: Optional[str] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
-):
-    """
-    Obtém informações sobre culturas agrícolas.
-    """
+async def get_agriculture_info(crop_type: str, growth_stage: Optional[str] = None,
+                               latitude: Optional[float] = None, longitude: Optional[float] = None):
     try:
-        agriculture_data = await agriculture_service.get_crop_info(
-            crop_type,
-            growth_stage,
-            latitude,
-            longitude,
-        )
-
-        response = {
-            "status": "success",
-            "agriculture": agriculture_data,
-            "crop_type": crop_type,
-            "growth_stage": growth_stage,
-        }
-
-        if latitude is not None and longitude is not None:
-            _validate_coordinates(latitude, longitude)
-            response["soil"] = await agriculture_service.get_soil_info(latitude, longitude)
-
+        _validate_coordinates(latitude, longitude)
+        if not crop_catalog.get_crop(crop_type):
+            raise HTTPException(404, "Cultura não encontrada.")
+        crop = await agriculture_service.get_crop_info(crop_type, growth_stage)
+        response = {"status": "success", "agriculture": crop, "crop_type": crop_type, "growth_stage": growth_stage}
+        if latitude is not None:
+            response["environment"] = await environmental_service.get_context(latitude, longitude)
+            response["soil"] = response["environment"]["soil"]
         return response
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        logger.error(f"Erro ao obter dados de agricultura: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.get("/crop/{crop_type}")
-async def get_crop_info_alias(
-    crop_type: str,
-    growth_stage: Optional[str] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
-):
-    """
-    Alias compatível com a documentação para dados de cultura.
-    """
+async def get_crop_info_alias(crop_type: str, growth_stage: Optional[str] = None,
+                              latitude: Optional[float] = None, longitude: Optional[float] = None):
     return await get_agriculture_info(crop_type, growth_stage, latitude, longitude)
 
 
 @router.get("/soil/{latitude}/{longitude}")
 async def get_soil_info(latitude: float, longitude: float):
-    """
-    Obtém informações de solo para coordenadas específicas.
-    """
     try:
         _validate_coordinates(latitude, longitude)
-        soil_data = await agriculture_service.get_soil_info(latitude, longitude)
-        return {
-            "status": "success",
-            "soil": soil_data,
-            "coordinates": {"latitude": latitude, "longitude": longitude},
-        }
+        return {"status": "success", "soil": await environmental_service.get_soil(latitude, longitude)}
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        logger.error(f"Erro ao obter dados de solo: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.get("/agrofit/products")
+async def search_agrofit_products(crop_type: Optional[str] = None, active_ingredient: Optional[str] = None,
+                                  product_name: Optional[str] = None, category: Optional[str] = None,
+                                  limit: int = Query(50, ge=1, le=500)):
+    try:
+        return await run_in_threadpool(agrofit_service.search_products, crop_type=crop_type,
+                                      active_ingredient=active_ingredient, product_name=product_name,
+                                      category=category, limit=limit, refresh=False)
+    except Exception:
+        raise HTTPException(503, "Catálogo AGROFIT indisponível.")
+
+
+@router.post("/agrofit/sync", dependencies=[Depends(require_admin_access)])
+async def sync_agrofit_products(force: bool = False):
+    try:
+        return await run_in_threadpool(agrofit_service.sync_products, force=force)
+    except Exception:
+        raise HTTPException(503, "Não foi possível sincronizar AGROFIT.")
 
 
 @router.get("/recommendations/preview")
-async def preview_recommendations(
-    crop_type: str,
-    coverage_percentage: float,
-    cv_coefficient: float,
-    density_per_cm2: float,
-    latitude: float = -22.0,
-    longitude: float = -47.0,
-    growth_stage: Optional[str] = None,
-    temperature: Optional[float] = 25.0,
-    humidity: Optional[float] = 65.0,
-):
-    """
-    Preview de recomendações baseado em parâmetros simulados.
-    """
+async def preview_recommendations(crop_type: str, coverage_percentage: float = Query(..., ge=0, le=100),
+                                  cv_coefficient: float = Query(..., ge=0, le=10000),
+                                  density_per_cm2: float = Query(..., ge=0, le=100000),
+                                  latitude: Optional[float] = None, longitude: Optional[float] = None,
+                                  growth_stage: Optional[str] = None, temperature: Optional[float] = None,
+                                  humidity: Optional[float] = None):
+    """Explicit simulation of the profile; no fabricated live weather or precision."""
     try:
         _validate_coordinates(latitude, longitude)
-        mock_analysis = {
-            "total_droplets": int(density_per_cm2 * 100),
-            "coverage_percentage": coverage_percentage,
-            "cv_coefficient": cv_coefficient,
-            "density_per_cm2": density_per_cm2,
-            "quality_score": 85 if coverage_percentage > 70 and cv_coefficient < 15 else 60,
-        }
-
-        recommendations = await recommendation_service.get_pesticide_recommendation(
-            analysis_results=mock_analysis,
-            latitude=latitude,
-            longitude=longitude,
-            crop_type=crop_type,
-            growth_stage=growth_stage,
-        )
-
-        return {
-            "status": "success",
-            "message": "Preview de recomendações gerado",
-            "recommendations": recommendations,
-            "input_parameters": {
-                "crop_type": crop_type,
-                "growth_stage": growth_stage,
-                "coverage_percentage": coverage_percentage,
-                "cv_coefficient": cv_coefficient,
-                "density_per_cm2": density_per_cm2,
-                "temperature": temperature,
-                "humidity": humidity,
-            },
-        }
+        metrics = {"total_droplets": 1 if density_per_cm2 > 0 else 0,
+                   "coverage_percentage": coverage_percentage, "density_per_cm2": density_per_cm2,
+                   "spatial_uniformity": {"cv": cv_coefficient}, "calibration": {"valid": True, "confirmed": False}}
+        metrics["quality"] = evaluate_quality(metrics)
+        metrics["quality"]["status"] = "simulated"
+        advice = recommendation_service.build_recommendation(metrics, crop_type, growth_stage)
+        return {"status": "simulation", "recommendations": advice,
+                "input_parameters": {"coverage_percentage": coverage_percentage, "spatial_cv": cv_coefficient,
+                                     "density_per_cm2": density_per_cm2, "temperature": temperature, "humidity": humidity}}
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        logger.error(f"Erro no preview de recomendações: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.get("/system/stats")
 async def get_system_stats():
-    """
-    Retorna estatísticas do sistema.
-    """
-    try:
-        stats = {
-            "system": {
-                "version": settings.APP_VERSION,
-                "uptime": time.time(),
-                "status": "operational",
-                "pwa_enabled": settings.ENABLE_PWA,
-            },
-            "analysis": {
-                "total_processed": 0,
-                "success_rate": 95.5,
-                "average_processing_time": 2.3,
-            },
-            "models": {
-                "active_model": "OpenCV Fallback",
-                "accuracy": 75.0,
-                "last_training": None,
-            },
-            "services": {
-                "weather_api": "active",
-                "agriculture_api": "active",
-                "recommendation_engine": "active",
-            },
-            "deployment": {
-                "host": settings.HOST,
-                "port": settings.PORT,
-                "root_path": settings.ROOT_PATH,
-            },
-        }
-
-        return {"status": "success", "stats": stats, "timestamp": time.time()}
-    except Exception as exc:
-        logger.error(f"Erro ao obter estatísticas: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc))
+    completed = _stats["completed"]
+    return {"status": "success", "stats": {"scope": "current_server_process_only; local_phone_analyses_not_collected",
+            "system": {"version": settings.APP_VERSION, "uptime_seconds": round(time.monotonic() - _started, 2)},
+            "analysis": {"total_processed": completed, "failed": _stats["failed"],
+                         "average_processing_time": _stats["processing_seconds"] / completed if completed else None},
+            "models": {"engine": ENGINE_VERSION, "measured_accuracy": None}}, "timestamp": time.time()}
 
 
 @router.get("/system/runtime")
 async def get_runtime_summary():
-    """
-    Retorna resumo de configuração e prontidão operacional sem expor segredos.
-    """
-    return {
-        "status": "success",
-        "runtime": build_runtime_report(settings),
-        "timestamp": time.time(),
-    }
+    return {"status": "success", "runtime": build_runtime_report(settings), "timestamp": time.time()}
 
 
 @router.get("/statistics")
 async def get_statistics_alias():
-    """
-    Alias compatível com documentação externa.
-    """
     return await get_system_stats()

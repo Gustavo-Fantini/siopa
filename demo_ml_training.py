@@ -114,8 +114,10 @@ def test_image_analysis(image_path):
         print(f"📊 Resultados:")
         print(f"   • Gotículas detectadas: {results.get('total_droplets', 0)}")
         print(f"   • Cobertura: {results.get('coverage_percentage', 0):.1f}%")
-        print(f"   • CV: {results.get('cv_coefficient', 0):.1f}%")
-        print(f"   • Densidade: {results.get('density_per_cm2', 0):.1f} got/cm²")
+        spatial_cv = results.get('cv_coefficient')
+        density = results.get('density_per_cm2')
+        print(f"   • CV espacial: {spatial_cv if spatial_cv is not None else 'indisponível'}")
+        print(f"   • Densidade: {density if density is not None else 'sem escala física confirmada'}")
         print(f"   • Qualidade: {results.get('quality_assessment', 'N/A')}")
         
         return results

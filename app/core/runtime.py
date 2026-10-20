@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from app.core.config import Settings
+from sqlalchemy.engine import make_url
 
 
 DEFAULT_SECRET_VALUES = {
@@ -30,6 +31,7 @@ def _path_status(path: Path) -> Dict[str, Any]:
 def build_runtime_report(settings: Settings) -> Dict[str, Any]:
     """Gera um relatório objetivo de prontidão para deploy e operação."""
     api_providers = {
+        "open_meteo": bool(settings.OPEN_METEO_API_URL),
         "openweather": bool(settings.OPENWEATHER_API_KEY),
         "weatherapi": bool(settings.WEATHERAPI_KEY),
         "climatempo": bool(settings.CLIMATEMPO_TOKEN),
@@ -48,7 +50,7 @@ def build_runtime_report(settings: Settings) -> Dict[str, Any]:
     cors_locked_down = "*" not in settings.CORS_ORIGINS
     allowed_hosts_locked_down = "*" not in settings.ALLOWED_HOSTS
     weather_provider_configured = any(
-        api_providers[name] for name in ("openweather", "weatherapi", "climatempo")
+        api_providers[name] for name in ("open_meteo", "openweather", "weatherapi", "climatempo")
     )
 
     warnings: List[str] = []
@@ -77,9 +79,7 @@ def build_runtime_report(settings: Settings) -> Dict[str, Any]:
         },
         "database": {
             "backend": settings.database_backend,
-            "url_masked": settings.resolved_database_url.split("@")[-1]
-            if "@" in settings.resolved_database_url
-            else settings.resolved_database_url,
+            "url_masked": make_url(settings.resolved_database_url).render_as_string(hide_password=True),
             "sqlite_path": str(settings.sqlite_database_path) if settings.sqlite_database_path else None,
         },
         "security": {

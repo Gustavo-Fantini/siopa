@@ -1,230 +1,98 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#52683b">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="static/app.css">
-    <title>SIOPA | Campo mobile</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#52683b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/app.css">
+  <title>SIOPA | Análise offline em campo</title>
 </head>
 <body>
-    <main class="app-shell">
-        <section class="hero panel reveal" style="--delay:0.02s">
-            <div class="hero-copy">
-                <p class="eyebrow">SIOPA | leitura de pulverizacao em campo</p>
-                <h1>Menos passos, leitura mais clara, uso melhor no celular.</h1>
-                <p class="hero-text">
-                    Envie a imagem do papel hidrossensivel, informe o contexto da aplicacao e receba uma
-                    resposta objetiva sobre cobertura, clima, cultura e recomendacao operacional.
-                </p>
-            </div>
-            <div class="hero-meta">
-                <div class="status-chip">
-                    <span class="status-label">Ambiente</span>
-                    <strong id="deployMode">Carregando</strong>
-                </div>
-                <div class="status-chip">
-                    <span class="status-label">Upload maximo</span>
-                    <strong id="maxUpload">10 MB</strong>
-                </div>
-                <div class="status-chip">
-                    <span class="status-label">Versao</span>
-                    <strong id="appVersion">-</strong>
-                </div>
-            </div>
-        </section>
-
-        <section class="workspace">
-            <form id="analysisForm" class="panel flow-panel reveal" style="--delay:0.08s" novalidate>
-                <div class="section-head">
-                    <div>
-                        <p class="panel-kicker">Fluxo principal</p>
-                        <h2>Analise mobile simplificada</h2>
-                        <p class="section-copy">
-                            O formulario foi reduzido ao essencial. Os campos tecnicos continuam disponiveis,
-                            mas nao atrapalham o uso rapido em campo.
-                        </p>
-                    </div>
-                    <button class="install-chip" type="button" id="installBtn" hidden>Instalar app</button>
-                </div>
-
-                <div id="messageBox" class="message" role="status" aria-live="polite"></div>
-
-                <section class="step-card" aria-labelledby="uploadTitle">
-                    <div class="step-index">01</div>
-                    <div class="step-body">
-                        <div class="step-head">
-                            <h3 id="uploadTitle">Imagem da amostra</h3>
-                            <p>Toque para escolher ou arraste a foto da folha para iniciar.</p>
-                        </div>
-                        <label class="upload-zone" id="uploadBox" for="imageFile">
-                            <input type="file" id="imageFile" accept="image/*" hidden>
-                            <span class="upload-badge">Entrada obrigatoria</span>
-                            <strong id="uploadName">Nenhum arquivo selecionado</strong>
-                            <span id="uploadHint">Aceita JPG, PNG ou BMP.</span>
-                            <img id="uploadPreviewImage" class="upload-preview" alt="Preview da imagem selecionada" hidden>
-                        </label>
-                    </div>
-                </section>
-
-                <section class="step-card" aria-labelledby="contextTitle">
-                    <div class="step-index">02</div>
-                    <div class="step-body">
-                        <div class="step-head">
-                            <h3 id="contextTitle">Contexto da aplicacao</h3>
-                            <p>Latitude, longitude e cultura alimentam as leituras de clima e recomendacao.</p>
-                        </div>
-                        <div class="field-grid">
-                            <label class="field">
-                                <span>Latitude</span>
-                                <input id="latitude" type="number" step="any" placeholder="-22.315500" required>
-                            </label>
-                            <label class="field">
-                                <span>Longitude</span>
-                                <input id="longitude" type="number" step="any" placeholder="-49.060800" required>
-                            </label>
-                            <label class="field">
-                                <span>Cultura</span>
-                                <select id="cropType" required></select>
-                            </label>
-                            <label class="field">
-                                <span>Estagio</span>
-                                <select id="growthStage">
-                                    <option value="">Selecione</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-                </section>
-
-                <details class="step-card optional-card">
-                    <summary>
-                        <span>
-                            <strong>03</strong>
-                            Contexto tecnico opcional
-                        </span>
-                        <span class="summary-hint">Abrir detalhes</span>
-                    </summary>
-                    <div class="optional-body">
-                        <div class="field-grid single-column">
-                            <label class="field">
-                                <span>Problema-alvo</span>
-                                <input id="targetProblem" type="text" placeholder="Ex.: ferrugem, lagarta, capim">
-                            </label>
-                        </div>
-                    </div>
-                </details>
-
-                <div class="sticky-actions">
-                    <button class="action secondary" type="button" id="locationBtn">Usar minha localizacao</button>
-                    <button class="action primary" type="submit" id="analyzeBtn">Analisar imagem</button>
-                </div>
-            </form>
-
-            <aside class="side-stack">
-                <section class="panel helper-panel reveal" style="--delay:0.14s">
-                    <p class="panel-kicker">Operacao</p>
-                    <h2>Checklist rapido</h2>
-                    <ol class="checklist">
-                        <li>Carregue uma imagem nitida do papel hidrossensivel.</li>
-                        <li>Confirme localizacao e cultura antes da analise.</li>
-                        <li>Use o resultado como apoio tecnico, nao como unica decisao de campo.</li>
-                    </ol>
-                    <div class="quick-links">
-                        <a class="mini-link" href="static/annotation.html">Anotacao do dataset</a>
-                        <a class="mini-link" href="docs">Swagger da API</a>
-                        <a class="mini-link" href="health">Health</a>
-                        <a class="mini-link" href="api/v1/dataset/stats">Dataset</a>
-                    </div>
-                </section>
-
-                <section id="cropPreviewCard" class="panel preview-panel reveal" style="--delay:0.2s" hidden>
-                    <p class="panel-kicker">Guia da cultura</p>
-                    <h2 id="cropPreviewTitle">Aguardando cultura</h2>
-                    <p id="cropPreviewText" class="section-copy">Selecione uma cultura para ver bico, volume e foco tecnico.</p>
-                    <div id="cropPreviewMetrics" class="metric-list compact-list"></div>
-                </section>
-
-                <section id="summaryCard" class="panel summary-panel reveal" style="--delay:0.26s">
-                    <p class="panel-kicker">Resumo da rodada</p>
-                    <h2 id="summaryTitle">Aguardando analise</h2>
-                    <p id="summaryText" class="section-copy">
-                        Quando a imagem for processada, este bloco mostra a leitura mais importante para a tomada de decisao.
-                    </p>
-                    <div id="summaryBadges" class="badge-row">
-                        <span class="badge neutral">Sem resultado</span>
-                    </div>
-                </section>
-            </aside>
-        </section>
-
-        <section id="loadingBox" class="panel loading-panel" hidden>
-            <div class="pulse"></div>
-            <div>
-                <p class="panel-kicker">Processando</p>
-                <h2>Executando visao, clima e recomendacao</h2>
-                <p class="section-copy">A resposta combina analise da imagem, leitura do clima local e regras agronomicas.</p>
-            </div>
-        </section>
-
-        <section id="resultsSection" class="results-shell" hidden>
-            <article id="decisionCard" class="panel decision-panel reveal" style="--delay:0.04s">
-                <div>
-                    <p class="panel-kicker">Resposta principal</p>
-                    <h2 id="decisionTitle">Resultado da aplicacao</h2>
-                    <p id="decisionText" class="section-copy"></p>
-                </div>
-                <div id="decisionBadge" class="decision-badge neutral">Sem leitura</div>
-            </article>
-
-            <div class="result-grid">
-                <article class="panel reveal" style="--delay:0.08s">
-                    <p class="panel-kicker">Leitura da imagem</p>
-                    <h3>Qualidade da deposicao</h3>
-                    <div id="analysisMetrics" class="metric-list"></div>
-                </article>
-
-                <article class="panel reveal" style="--delay:0.12s">
-                    <p class="panel-kicker">Clima</p>
-                    <h3>Janela de aplicacao</h3>
-                    <div id="weatherMetrics" class="metric-list"></div>
-                </article>
-
-                <article class="panel reveal" style="--delay:0.16s">
-                    <p class="panel-kicker">Cultura</p>
-                    <h3>Guia tecnico</h3>
-                    <div id="agricultureMetrics" class="metric-list"></div>
-                </article>
-
-                <article class="panel reveal" style="--delay:0.2s">
-                    <p class="panel-kicker">Produto</p>
-                    <h3>Recomendacao principal</h3>
-                    <div id="productMetrics" class="metric-list"></div>
-                </article>
-
-                <article class="panel full reveal" style="--delay:0.24s">
-                    <p class="panel-kicker">Plano de acao</p>
-                    <h3>Orientacoes praticas</h3>
-                    <ul id="actionList" class="action-list"></ul>
-                </article>
-
-                <article class="panel full reveal" style="--delay:0.28s">
-                    <details class="technical-details">
-                        <summary>Ver detalhes tecnicos e observacoes complementares</summary>
-                        <div id="technicalNotes" class="note-grid"></div>
-                    </details>
-                </article>
-            </div>
-        </section>
-    </main>
-
-    <noscript>
-        <div class="noscript-banner">Ative JavaScript para usar a interface web do SIOPA.</div>
-    </noscript>
-
-    <script src="static/app.js" defer></script>
+<main class="app-shell">
+  <header class="panel hero">
+    <div><p class="eyebrow">SIOPA · caderno de campo</p><h1>A foto fica no celular.<br>A leitura também.</h1>
+      <p class="hero-text">Analise manchas no papel hidrossensível, confira a distribuição e guarde cada amostra, mesmo sem internet.</p></div>
+    <div class="hero-meta"><span id="connectionStatus" class="badge neutral" role="status">Verificando conexão</span>
+      <span id="offlineStatus" class="badge neutral" role="status">Preparando arquivos locais</span>
+      <small id="engineVersion">Motor local</small><button id="installBtn" type="button" class="action secondary" hidden>Instalar aplicativo</button></div>
+  </header>
+  <div id="messageBox" class="message" role="status" aria-live="polite" hidden></div>
+  <div class="workspace">
+  <form id="analysisForm" class="panel flow-panel">
+    <div class="section-head"><div><p class="panel-kicker">Nova amostra</p><h2>Da câmera à análise</h2></div><span class="badge good">Processamento local</span></div>
+    <section class="step-card"><span class="step-index">01</span><div class="step-body"><h3>Fotografe o papel</h3>
+      <p class="section-copy">Use luz uniforme, foco nítido e fundo diferente do papel. Evite reflexos e sombras.</p>
+      <div class="capture-actions"><label class="action primary file-button" for="cameraFile">Abrir câmera<input id="cameraFile" type="file" accept="image/*" capture="environment"></label>
+        <label class="action secondary file-button" for="imageFile">Escolher foto<input id="imageFile" type="file" accept="image/*"></label></div>
+      <p id="uploadName" class="small-text">JPG, PNG ou outro formato que o aparelho consiga abrir. Até 25 MB.</p>
+      <div id="previewWrap" class="image-frame" hidden><canvas id="inputCanvas" aria-label="Foto selecionada e cantos do papel"></canvas></div>
+      <div class="corner-controls"><label class="check-field"><input id="manualCorners" type="checkbox">Marcar os quatro cantos do papel na foto</label>
+        <button id="clearCornersBtn" class="text-button" type="button" hidden>Limpar cantos</button></div>
+      <p id="cornerHint" class="small-text" hidden>Toque nos quatro cantos, em sequência ao redor do papel. Não cruze os lados.</p>
+    </div></section>
+    <section class="step-card"><span class="step-index">02</span><div class="step-body"><h3>Confirme a escala física</h3>
+      <div class="field-grid"><label class="field"><span>Lado maior do papel (mm)</span><input id="paperWidth" type="number" min="1" max="1000" step="0.1" value="76" required></label>
+        <label class="field"><span>Lado menor do papel (mm)</span><input id="paperHeight" type="number" min="1" max="1000" step="0.1" value="26" required></label></div>
+      <label class="check-field"><input id="paperSizeConfirmed" type="checkbox">Conferi as dimensões reais deste papel.</label>
+      <p class="small-text">76 × 26 mm é apenas o valor inicial. Sem confirmação e calibração válida, densidade e diâmetros físicos ficam indisponíveis.</p>
+      <label class="field"><span>Menor mancha a contabilizar (mm)</span><input id="minStainDiameter" type="number" min="0.01" max="5" step="0.01" value="0.10" required></label>
+      <p class="notice">A leitura mede manchas visíveis na foto. Não é microscopia: a resolução, o foco e o piso escolhido limitam as manchas detectáveis.</p>
+    </div></section>
+    <section class="step-card"><span class="step-index">03</span><div class="step-body"><h3>Cultura e perfil de comparação</h3>
+      <div class="field-grid"><label class="field"><span>Cultura</span><select id="cropType" required><option value="">Carregando catálogo local</option></select></label>
+        <label class="field"><span>Estágio (opcional)</span><select id="growthStage"><option value="">Não informado</option></select></label></div>
+      <p id="cropGuide" class="section-copy"></p>
+      <ul id="cropGuidance" class="action-list"></ul><p class="small-text">Plano editorial de amostragem para apoiar o registro. Requer validação nas condições da sua lavoura.</p>
+      <details class="technical-details"><summary>Perfil deste ensaio · limites de qualidade</summary>
+        <p class="small-text">Os valores iniciais são de triagem experimental, sem regra agronômica universal. Ajuste-os ao seu protocolo. O índice fuzzy indica adequação a estes limites; não é probabilidade de acerto ou de eficácia.</p>
+        <div class="field-grid profile-grid">
+          <label class="field"><span>Cobertura mínima (%)</span><input id="coverageMin" type="number" min="0" max="100" step="0.1" value="5"></label>
+          <label class="field"><span>Cobertura alvo (%)</span><input id="coverageTarget" type="number" min="0" max="100" step="0.1" value="15"></label>
+          <label class="field"><span>Cobertura máxima (%)</span><input id="coverageMax" type="number" min="0" max="100" step="0.1" value="35"></label>
+          <label class="field"><span>Densidade mínima (/cm²)</span><input id="densityMin" type="number" min="0" step="1" value="10"></label>
+          <label class="field"><span>Densidade alvo (/cm²)</span><input id="densityTarget" type="number" min="0" step="1" value="50"></label>
+          <label class="field"><span>Densidade máxima (/cm²)</span><input id="densityMax" type="number" min="0" step="1" value="250"></label>
+          <label class="field"><span>CV espacial máximo (%)</span><input id="uniformityCvMax" type="number" min="1" step="1" value="50"></label>
+        </div><label class="check-field"><input id="profileConfirmed" type="checkbox">Estes limites foram definidos para meu protocolo de aplicação.</label>
+      </details>
+    </div></section>
+    <div class="sticky-actions"><button id="analyzeBtn" class="action primary" type="submit">Analisar no aparelho</button></div>
+    <p class="small-text">A foto e o resultado serão guardados neste aparelho. Nenhuma foto é enviada ao servidor.</p>
+  </form>
+  <aside class="side-stack">
+    <section class="panel helper-panel"><p class="panel-kicker">Armazenamento</p><h2>Pronto para levar ao campo</h2>
+      <p id="storageStatus" class="section-copy">Verificando armazenamento local.</p>
+      <button id="persistBtn" class="action secondary" type="button">Proteger dados offline</button>
+      <p class="small-text">A proteção depende do navegador. Limpar dados do app ou desinstalá-lo pode apagar o histórico. Exporte amostras importantes.</p>
+    </section>
+    <section class="panel helper-panel"><p class="panel-kicker">Contexto opcional</p><h2>Dados com origem e data</h2>
+      <p class="section-copy">A análise da foto funciona sem posição. Com internet, atualize catálogo e contexto ambiental para consulta offline.</p>
+      <div class="field-grid"><label class="field"><span>Latitude</span><input id="latitude" type="number" min="-90" max="90" step="any" placeholder="Opcional"></label>
+        <label class="field"><span>Longitude</span><input id="longitude" type="number" min="-180" max="180" step="any" placeholder="Opcional"></label></div>
+      <button id="locationBtn" class="text-button" type="button">Usar minha localização</button>
+      <details class="technical-details"><summary>Servidor de atualização</summary><label class="field"><span>Endereço HTTPS do SIOPA (opcional)</span><input id="serverUrl" type="url" placeholder="https://seu-servidor.example"></label><p class="small-text">No APK, informe seu servidor para obter contexto. O app já inclui motor e catálogo para funcionar sem servidor.</p></details>
+      <button id="syncBtn" class="action secondary" type="button">Atualizar contexto e catálogo</button>
+      <p id="snapshotStatus" class="small-text">Sem atualização de contexto.</p><div id="contextMetrics" class="metric-list"></div>
+      <details class="technical-details"><summary>Solo · previsão espacial regional</summary><div id="soilMetrics" class="metric-list"></div><p class="small-text">Propriedades estimadas em grade; não substituem coleta e análise de solo da área. <a href="https://www.isric.org/explore/soilgrids" target="_blank" rel="noopener noreferrer">ISRIC SoilGrids · CC BY 4.0</a></p></details>
+      <details class="technical-details"><summary>Terreno · modelo de elevação</summary><div id="terrainMetrics" class="metric-list"></div><p class="small-text">Altitude do modelo de terreno, sem levantamento topográfico local. <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> / <a href="https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM" target="_blank" rel="noopener noreferrer">Copernicus DEM</a>.</p></details>
+    </section>
+    <section id="datasetTools" class="panel helper-panel" hidden><p class="panel-kicker">Pesquisa</p><a id="annotationLink" class="mini-link" href="static/annotation.html">Anotação do dataset · requer servidor e acesso</a></section>
+  </aside>
+  </div>
+  <section id="loadingBox" class="panel loading-panel" role="status" hidden><div class="pulse"></div><div><h2>Analisando neste aparelho</h2><p id="loadingText">Separando manchas e calculando métricas. A foto não usa a conexão.</p></div></section>
+  <section id="resultsSection" class="results-shell" hidden>
+    <article class="panel decision-panel"><div><p class="panel-kicker">Leitura da amostra</p><h2 id="decisionTitle">Resultado</h2><p id="decisionText" class="section-copy"></p></div><span id="decisionBadge" class="badge neutral"></span></article>
+    <div class="result-grid"><article class="panel result-panel"><h3>Manchas e cobertura</h3><div id="analysisMetrics" class="metric-list"></div></article>
+      <article class="panel result-panel"><h3>Distribuição e perfil</h3><div id="qualityMetrics" class="metric-list"></div><p class="small-text">Índice fuzzy experimental de adequação ao perfil. Não representa probabilidade de acerto, eficácia biológica ou recomendação de produto.</p></article>
+      <article class="panel result-panel full"><h3>Mapa auditável de manchas</h3><canvas id="overlayCanvas" class="result-canvas" aria-label="Máscara das manchas classificadas"></canvas><p id="overlayLegend" class="small-text">Verde: válida · laranja: unida · azul: borda · cinza: ruído/pequena.</p></article>
+      <article class="panel result-panel full"><h3>Limites e observações desta leitura</h3><ul id="resultWarnings" class="action-list"></ul><details class="technical-details"><summary>Dados e parâmetros completos</summary><pre id="technicalJson"></pre></details><button id="exportResultBtn" class="action secondary" type="button">Exportar amostra com foto</button><p id="saveStatus" class="small-text" role="status"></p></article></div>
+  </section>
+  <section class="panel history-panel"><div class="section-head"><div><p class="panel-kicker">Histórico local</p><h2>Seu caderno de amostras</h2></div><button id="refreshHistoryBtn" type="button" class="text-button">Atualizar lista</button></div><div id="historyList" class="history-list"><p>Nenhuma amostra salva.</p></div></section>
+</main>
+<noscript><p class="noscript-banner">Ative JavaScript para executar a análise local do SIOPA.</p></noscript>
+<script src="static/offline-store.js" defer></script><script src="static/analysis-engine.js" defer></script><script src="static/app.js" defer></script>
 </body>
 </html>
